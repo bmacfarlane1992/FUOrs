@@ -20,12 +20,12 @@ read ok
 
 # Loop over inclination values ($inclin$ within analyse_disc.f90 script) used in analyses
 
-for i in 90 # 90 75 60 30 0
+for i in 90 75 60 30 0
 do
 
 # Loop over Keplerian restrictions ($restrkep$ within analyse_disc.f90 script) used in analyses
 
-	for j in 90 # 90 70 50
+	for j in 90 70 50
 	do
 
 # Write variables to file for reading within analyse_disc.f90
@@ -43,13 +43,14 @@ do
 
 # Loop over EA runs to be analysed
 
-		for k in 3 # 3 4 5 6
+		for k in 3 4 5 6
 		do 
 
 # Create directories for storage of output data files
 
 			printf " \n EA run '$k' now being analysed \n \n "
 			filedir=$arch_dir'DATA/'$k'/vK'$j'_'$i'i'
+			rm -r $filedir'/pv_diag/'*raw*
 			mkdir $filedir
 			mkdir $filedir'/pdisc/' $filedir'/cdisc/' $filedir'/rdisc/' $filedir'/pv_diag/'
 

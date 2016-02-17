@@ -50,6 +50,7 @@ do
 
 			printf " \n EA run '$k' now being analysed \n \n "
 			filedir=$arch_dir'DATA/'$k'/vK'$j'_'$i'i'
+			rm -r $filedir'/pv_diag/*raw*'
 			mkdir $filedir
 			mkdir $filedir'/pdisc/' $filedir'/cdisc/' $filedir'/rdisc/' $filedir'/pv_diag/'
 

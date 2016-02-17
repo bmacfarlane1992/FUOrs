@@ -624,9 +624,6 @@ if (counter==3) then
 	allocate(pv_x(1:trho_count))								    !!! Loop over particles, if rho and T	
 	allocate(pv_y(1:trho_count))								    !!! restrictions met, output data in array
 	allocate(pv_vz(1:trho_count))								    !!! for PV diagram (raw, histogram and fit)
-
-	outfile_rawpv = trim(adjustl(in_file))//"."//trim(adjustl(out_file_form))//".raw_pv."//trim(adjustl(file_ext3))
-	open(UNIT=2,file=outfile_rawpv,form='formatted',position='append') 
 !
 	i = 1
 	do p=1,ptot
@@ -634,7 +631,6 @@ if (counter==3) then
 			pv_x(i) = parray(1,p)*rscale*206265.
 			pv_y(i) = parray(2,p)*rscale*206265.
 			pv_vz(i) = v(3,p)*vscale  
-			write(2, '(3E15.7,2X)') pv_x(i), pv_y(i), pv_vz(i)
 			i = i + 1
 		endif
 	enddo
