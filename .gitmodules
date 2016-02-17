@@ -1,3 +1,3 @@
 [submodule "GENERATE/FUOrs"]
-	path = GENERATE/FUOrs
-	url = https://github.com/bmacfarlane1992/FUOrs
+	path = GENERATE/seren
+	url = https://github.com/bmacfarlane1992/SEREN
