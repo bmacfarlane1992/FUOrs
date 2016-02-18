@@ -25,12 +25,12 @@ mkdir $arch_dir'DATA'
 
 # Loop over inclination values ($inclin$ within analyse_disc.f90 script) used in analyses
 
-for i in 90 # 90 75 60 45 0
+for i in 90 # 60 0
 do
 
 # Loop over Keplerian restrictions ($restrkep$ within analyse_disc.f90 script) used in analyses
 
-	for j in 90 # 90 70
+	for j in 90 # 70
 	do
 
 # Write variables to file for reading within analyse_disc.f90
@@ -48,7 +48,7 @@ do
 
 # Loop over EA runs to be analysed
 
-		for k in 3 # 3 4 5 6
+		for k in 3 # 4 
 		do 
 
 # Create directories for storage of output data files
@@ -66,6 +66,12 @@ do
 			do
 				./../../GENERATE/seren/analysedisc "${x}"
 			done
+
+# Next, plot x-y distribution in SPLASH and send to appropriate directory
+
+			cd $arch_dir'PLOTS/'
+			dsplash ../DATA/$k'/vK'$j'_'$i'i/' -x 1 -y 2 -r 9 -dev SPLASH_xy.png
+			mv SPLASH_xy.png $k'/vK'$j'_'$i'i/'
 
 # Remove all garbage files and transfer useful data to pdisc/cdisc storage directory
 

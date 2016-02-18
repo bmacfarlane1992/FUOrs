@@ -369,7 +369,7 @@ do nsin=1,1 ! no planet in disc
 !
 !							!!! Rotate disc to lie on z = 0 plane
 							!!! prior to inclination
- cosphi = cos( ( ( acos(cosphi) / (pi / 180.) ) - 90.) * (pi / 180.) )
+ cosphi = cos( ( ( acos(cosphi) / (pi / 180.) ) + 90.) * (pi / 180.) )
  sinphi = sqrt( 1 - cosphi**2 )
 !
 !							!!! Ensure rotation about y-axis 
