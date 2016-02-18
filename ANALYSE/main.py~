@@ -15,11 +15,11 @@
 #
 arch_dir = "/home/ben/Documents/WORK_PLANETS/PROJECTS/FUORS/"	# Location of ea/ directory with data set
 #
-v_K = ["90"] # ["90","70","50"]						# Keplerian velocity restriction on disc mass/radius
-inclin = ["90"] # ["0","30","60","75","90"]				# Inclination of disc being analysed
+v_K = ["90","70"]						# Keplerian velocity restriction on disc mass/radius
+inclin = ["0","45","60","75","90"]				# Inclination of disc being analysed
 #
 batch = "TRUE"							# Choose whether ("TRUE") or not ("FALSE") to batch
-batch_accrun = [3] # [3,4,5,6]					# process runs
+batch_accrun = [3,4,5,6]					# process runs
 #
 acc_run = 3						# If batch = "FALSE", carry out analysis of single run (debugging)			
 #
