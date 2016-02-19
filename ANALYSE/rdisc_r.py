@@ -33,7 +33,7 @@ import glob
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, acc_run, hasharr_app, n_accr, r_inspec, v_K, inclin): 	
+def read(arch_dir, plotdir, ea_run, hasharr_app, n_accr, r_inspec, v_K, inclin): 	
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

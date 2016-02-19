@@ -4,7 +4,7 @@
 # Programme designed to read in simulation data and generate synthetic PV diagram 
 #
 # Author: Benjamin MacFarlane
-# Date: 17/02/2016
+# Date: 19/02/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -23,12 +23,10 @@ kg_Msol = 1.998e30
 #
 kep_fit = "TRUE"
 #
-mass_check = "FALSE"
-#
 fit_start = 1
 fit_stop = 10
 #
-RL_massfit = "FALSE"
+RL_fitcheck = "FALSE"
 #
 raw_fit = "FALSE"
 #
@@ -53,8 +51,7 @@ from scipy.optimize import curve_fit
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, \
-   m_s, m_d_kep, m_d_piv, m_d_sigALMA):
+def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_timeref):
 #
 	print "Position-Velocity diagram now being plotted"
 #
@@ -72,7 +69,7 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 		Lfit_file = [""]*file_n
 		Rfit_file = [""]*file_n
 #
-		snaparr_tmp = [0]*len(snaparr)
+		snaparr_tmp = [0]*file_n
 		plot_title = [""]*file_n ; plot_filename = [""]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
@@ -92,7 +89,7 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 				Rfit_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
 				   str(snaparr[i]+69)+'.du.fit_Rpv.1'
 #
-			plot_title[fcount] = 'P-V Diagram: '+str(acc_run)+'   ('+str(snaparr[i])+')'
+			plot_title[fcount] = 'P-V Diagram: '+str(ea_run)+'   ('+str(snaparr[i])+')'
 			plot_filename[fcount] = plotdir+'TEST_PV_diag_'+str(snaparr[i])+'.png'
 #
 			snaparr_tmp[fcount] = snaparr[i]
@@ -106,7 +103,7 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 		Lfit_file = [""]*file_n
 		Rfit_file = [""]*file_n
 #
-		snaparr_tmp = [0]*(len(snaparr)*len(snaparr[0]))
+		snaparr_tmp = [0]*file_n
 		plot_title = [""]*file_n ; plot_filename = [""]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
@@ -227,16 +224,14 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 						if (Lfit_arr[0][b] == r_arr[a]):
 							Lfit_ydum.append(Lfit_arr[1][b])
 							Lfit_ndum.append(Lfit_arr[2][b])
-					ind = len(Lfit_ydum)-1
 					for b in range(0, len(Lfit_ydum)):
-						if (Lfit_ndum[ind] > sig_noise):
-							Lfit_y.append(Lfit_ydum[ind])
+						if (Lfit_ndum[b] > sig_noise):
+							Lfit_y.append(Lfit_ydum[b])
 							if (r_arr[a] == 0):
 								Lfit_r.append(1e-1)
 							else:
 								Lfit_r.append(r_arr[a])
 							break
-						ind = ind - 1
 #
 	# Change quadrant of LHS fit arrays for correct power index fitting to curve
 #
@@ -251,7 +246,7 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 	# Fitting routine to PV-diagram, and determination of system mass using Keplerian edge fit
 #
 			coeffs1, matcov1 = curve_fit(func, Lfit_r[fit_start:fit_stop], \
-			   Lfit_y[fit_start:fit_stop], [-1., 1.])
+			   Lfit_y[fit_start:fit_stop], [1., 1.])
 #
 			Lfit_r1 = np.array(Lfit_r)*1.5e11 ; Lfit_y1 = np.array(Lfit_y)*1000.
 			coeffs11, matcov11 = curve_fit(func, Lfit_r1[fit_start:fit_stop], \
@@ -302,17 +297,19 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 						if (Rfit_arr[0][b] == r_arr[a]):
 							Rfit_ydum.append(Rfit_arr[1][b])
 							Rfit_ndum.append(Rfit_arr[2][b])
+					ind = len(Rfit_ydum)-1
 					for b in range(0, len(Rfit_ydum)):
-						if (Rfit_ndum[b] > sig_noise):
-							Rfit_y.append(Rfit_ydum[b])
+						if (Rfit_ndum[ind] > sig_noise):
+							Rfit_y.append(Rfit_ydum[ind])
 							if (r_arr[a] == 0):
 								Rfit_r.append(1e-1)
 							else:
 								Rfit_r.append(r_arr[a])
 							break
+						ind = ind - 1
 #
 			coeffs2, matcov2 = curve_fit(func, Rfit_r[fit_start:fit_stop], \
-			   Rfit_y[fit_start:fit_stop], [-1., 1.])
+			   Rfit_y[fit_start:fit_stop], [1., 1.])
 #
 			Rfit_r2 = np.array(Rfit_r)*1.5e11 ; Rfit_y2 = np.array(Rfit_y)*1000.
 			coeffs22, matcov22 = curve_fit(func, Rfit_r2[fit_start:fit_stop], \
@@ -322,32 +319,25 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Quantified PV diagram analysis & Mass checks #
+		# Outputs of PV diagram mass analysis #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
 			pv_mass.append( (M_sys1 + M_sys2) / 2. )
-			if (mass_check == "TRUE"):
-				print "for snaparr value: "+str(snaparr_tmp[i])
-				print "\tMass of central protostar: "+str(m_s[i])
-				print "\tMass of disc (Keplerian velocity criterion): "+str(m_d_kep[i])
-				print "\tMass of disc (Oribit infall criterion): "+str(m_d_piv[i])
-				print "\tMass of disc (ALMA density criterion): "+str(m_d_sigALMA[i])
-				print "\tStar + disc mass (Keplerian fitted P-V diagram): "+str(pv_mass[i])
 #
-			pv_kepcrit.append( abs(m_d_kep[i] - pv_mass[i]) / m_d_kep[i] )
-			pv_pivcrit.append( abs(m_d_piv[i] - pv_mass[i]) / m_d_piv[i] )
-			pv_sigALMAcrit.append( abs(m_d_sigALMA[i] - pv_mass[i]) / m_d_sigALMA[i] )
 #
-			if (RL_massfit == "TRUE"):
-				print 'Fit coefficients for LHS data (Keplerian edge - a*x^(-0.5) + c)' \
-				   ' are:   ', coeffs1
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+		# Outputs of PV diagram mass analysis #
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+#
+#
+			if (RL_fitcheck == "TRUE"):
 				print "Mass of the system determined from LHS PV fit is: ", \
 				   round(M_sys1,3), " Solar masses"
-				print 'Fit coefficients for RHS data (Keplerian edge - a*x^(-0.5) + b)' \
-				   ' are:   ', coeffs2
 				print "Mass of the system determined from RHS PV fit is: ", \
 				   round(M_sys2,3), " Solar masses"
+				print "Averaged mass from PV diagram fits is: ", \
+				   round(pv_mass[i],3), "Solar masses"
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -378,6 +368,9 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 			   linestyle = 'dashed', color = 'g')		
 #
 		if (kep_fit == "TRUE"):
+#
+	# PV Keplerian distributions
+#
 			Lfit_start = len(Lfit_r)-fit_stop
 			Lfit_stop = len(Lfit_r)-fit_start
 			Lfit_start = len(Lfit_r)-fit_stop + (len(Lfit_r[Lfit_start:Lfit_stop]) - \
@@ -388,6 +381,14 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 			Rfit = plt.plot(Rfit_r[fit_start:fit_stop], y_fitted2, linewidth = 2, \
 			   linestyle = 'dashed', color = 'r')		
 #
+	# Simulation Keplerian distributions
+#
+			plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 2, \
+			   linestyle = 'dashed', color = 'k')
+			r[i] = [-k for k in r[i]] ; vkep[i] = [-k for k in vkep[i]]
+			plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 2, \
+			   linestyle = 'dashed', color = 'k')
+#
 		plt.colorbar()
 		plt.xlabel('Radius (AU)')
 		plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
@@ -397,4 +398,6 @@ def pv(arch_dir, plotdir, acc_run, snaparr, v_K, inclin, EA_lenref, EA_timeref, 
 		plt.savefig(plot_filename[i])
 		plt.clf()
 #	
+	return pv_mass
+#
 #

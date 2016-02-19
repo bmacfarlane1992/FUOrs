@@ -34,6 +34,7 @@ d[tstart6] = 86.00 ; d[tend6] = 89.00
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
+import os
 import random
 import math
 import numpy as np
@@ -50,7 +51,7 @@ import glob
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, acc_run, snaparr, v_K, inclin):
+def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -151,6 +152,43 @@ def read(arch_dir, plotdir, acc_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+		# Generate accretion time parameters for use in mass_comp.py and output #
+		# to .dat file #
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+#
+#
+		f = open('acc_params.dat', 'w')
+		t_cen = [0] * n_accr
+		t_len = [0] * n_accr
+		t_b1 = [0] * n_accr
+		t_b2 = [0] * n_accr
+		t_s = [0] * n_accr
+		t_e = [0] * n_accr
+#	
+		for i in range(0, n_accr):	
+			t_len[i] = ( ( (hasharr_app[i][1] - hasharr_app[i][0]) / 2. ) * 0.01 )
+			t_cen[i] = ( (hasharr_app[i][1] - hasharr_app[i][0] / 2.) * 0.01 ) + min(time)
+#
+			if (i == 0):
+				t_b1[i] = min(time)
+			else:
+				t_b1[i] = hasharr_app[i][0] - 0.5 * (hasharr_app[i][0] - hasharr_app[i-1][0])
+
+			if (i == n_accr-1):
+				t_b2[i] = max(time)
+			else:
+				t_b2[i] = hasharr_app[i][1] + 0.5 * (hasharr_app[i+1][1] - hasharr_app[i][0])
+#
+			t_s[i] = t_cen[i] - t_len[i]
+			t_e[i] = t_cen[i] + t_len[i]
+			f.write(str(t_len[i])+' '+str(t_cen[i])+' '+str(t_b1[i])+' '+str(t_b2[i]) + \
+			   ' '+str(t_s[i])+' '+str(t_e[i])+'\n')
+		f.close()
+		os.system('mv acc_params.dat ../DATA/'+str(ea_run))
+		
+#
+#
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		# Plot rdisc.1 temporally evolved parameters if file is complete #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
@@ -244,8 +282,8 @@ def read(arch_dir, plotdir, acc_run, snaparr, v_K, inclin):
 #
 		if (snaparr.ndim == 2):
 #
-			tstart = d['tstart'+str(acc_run)]
-			tend = d['tend'+str(acc_run)]
+			tstart = d['tstart'+str(ea_run)]
+			tend = d['tend'+str(ea_run)]
 #
 			snapstart = int((tstart - min(time)) / ((max(time) - min(time)) / n_snaps))
 			snapend = int((tend - min(time)) / ((max(time) - min(time)) / n_snaps))

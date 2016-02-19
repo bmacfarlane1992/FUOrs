@@ -6,7 +6,7 @@
 # Whitworth & Hubber (2012) work
 #
 # Author: Benjamin MacFarlane
-# Date: 28/01/2016
+# Date: 18/02/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -47,7 +47,7 @@ from scipy import interpolate
 #
 	# Read radially varied data for single snapshot (temporally evolved filenames)
 #
-def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
+def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
    pradius, hasharr_app, n_accr, r_limit, spline, r_d_kep, timearr, v_K):
 #
 	print("pdisc files being read")
@@ -261,7 +261,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			print "\n Surface density power law fits \n"
 			for i in range(0, len(snaparr_tmp)):
 				print "Power index for the "+snaparr_tmp[i]+"th snapshot of " \
-				   +str(acc_run)+" is: ",  \
+				   +str(ea_run)+" is: ",  \
 				   str(round(np.log10(abs(coeffs1[i][0] )), 4)), \
 				   str(round(np.log10(abs(coeffs2[i][0])), 4))+" \n"
 #
@@ -321,7 +321,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			print "\n Temperature power law fits \n"
 			for i in range(0, len(snaparr_tmp)):
 				print "Power index for the "+snaparr_tmp[i]+"th snapshot of "+ \
-				   str(acc_run)+" is: ",  \
+				   str(ea_run)+" is: ",  \
 				   str(round(np.log10(abs(coeffs1[i][0])), 4)), \
 				   str(round(np.log10(abs(coeffs2[i][0])), 4))+" \n"
 #
@@ -441,7 +441,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			   str(hasharr_app[i][0])+ \
 			   " for "+str((hasharr_app[i][1]-hasharr_app[i][0])*10)+" years" \
 			   " until snapshot "+str(hasharr_app[i][1])
-		print "\n The final snapshot of ea run "+str(acc_run)+" is "+str(len(time))+"\n"
+		print "\n The final snapshot of ea run "+str(ea_run)+" is "+str(len(time))+"\n"
 		for i in range(0, len(snaparr_tmp)):
 			for j in range(0, len(snaparr_tmp[0])):
 				print "The time of snapshot ("+EA_lenref[i]+", "+ \
@@ -569,7 +569,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				print "\n Surface density power law fits \n"
 				for j in range(0, len(snaparr_tmp)):
 					print "Power index for the "+str(snaparr_tmp[i][j]) \
-					   +"th snapshot of "+str(acc_run)+" is: ",  \
+					   +"th snapshot of "+str(ea_run)+" is: ",  \
 					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
 					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
 #
@@ -634,7 +634,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				print "\n Temperature power law fits \n"
 				for j in range(0, len(snaparr_tmp[0])):
 					print "Power index for the "+str(snaparr_tmp[i][j]) \
-					   + "th snapshot of "+str(acc_run)+" is: ",  \
+					   + "th snapshot of "+str(ea_run)+" is: ",  \
 					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
 					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
 #
@@ -802,7 +802,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				print "\n Surface density power law fits \n"
 				for j in range(0, len(snaparr_tmp)):
 					print "Power index for the "+str(snaparr_tmp[j][i]) \
-					   +"th snapshot of "+str(acc_run)+" is: ",  \
+					   +"th snapshot of "+str(ea_run)+" is: ",  \
 					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
 					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
 #
@@ -867,7 +867,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				print "\n Temperature power law fits \n"
 				for j in range(0, len(snaparr_tmp)):
 					print "Power index for the "+str(snaparr_tmp[j][i]) \
-					   + "th snapshot of "+str(acc_run)+" is: ",  \
+					   + "th snapshot of "+str(ea_run)+" is: ",  \
 					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
 					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
 #
@@ -980,5 +980,7 @@ def read(arch_dir, plotdir, acc_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 			plt.savefig(str(plotdir)+'vthe_restr_'+EA_lenref[a]+'.png')
 			plt.clf()
+#
+	return r, vkep
 #
 #

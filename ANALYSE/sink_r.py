@@ -38,7 +38,7 @@ import glob
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, acc_run, snaparr):
+def read(arch_dir, plotdir, ea_run, snaparr):
 	print "Planet (sink) data being read"
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -49,7 +49,7 @@ def read(arch_dir, plotdir, acc_run, snaparr):
 	pmass = []
 	pradius = []
 	ptime = []
-	file_list = sorted(glob.glob(arch_dir+'../../../ICs/'+str(acc_run)+'/DE05.sink*'))
+	file_list = sorted(glob.glob(arch_dir+'../../../ICs/'+str(ea_run)+'/DE05.sink*'))
 	file_n = len(file_list)
 #
 	# Define arrays to fill
