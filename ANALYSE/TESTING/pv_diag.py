@@ -4,7 +4,7 @@
 # Programme designed to read in simulation data and generate synthetic PV diagram 
 #
 # Author: Benjamin MacFarlane
-# Date: 10/03/2016
+# Date: 03/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -16,20 +16,20 @@
 	# Unit conversion parameters
 #
 pcAU = 206265.
-AUm = 1.496e11
+AUm = 1.498e11
 G = 6.67e-11
 Msol_kg = 1.998e30
 #
 	# Miscellaneous parameters
 #
-sig_mult = 0
+sig_mult = 3
 #
 kep_fit = "TRUE"
 #
-fit_start = 0
-fit_stop = 25
+fit_start = 1
+fit_stop = 15
 #
-RL_fitcheck = "FALSE"
+RL_fitcheck = "TRUE"
 #
 raw_fit = "FALSE"
 #
@@ -142,7 +142,6 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 	pv_mass = []
-	pv_mass_err = []
 	pv_kepcrit = []
 	pv_pivcrit = []
 	pv_sigALMAcrit = []
@@ -178,26 +177,17 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 		if (kep_fit == "TRUE"):
 #
-#
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Calculate noise level based off in-situ PV diagram envelope emission #
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-#
+	# Calculate the noise from which threshold of Keplerian profile is determined from
 #
 			noise_count = 0
 			count_sum = 0
 #
 			for j in range(0, len(count_bin)):
-				if ((count_bin[j] != 0) and (r_bin[j] < -50.) \
-				   and (vz_bin[j] > 0.5)):
-					noise_count = noise_count + 1
-					count_sum = count_sum + count_bin[j]
-				if ((count_bin[j] != 0) and (r_bin[j] > 50.) \
-				   and (vz_bin[j] < -0.5)):
+				if (count_bin[j] != 0):
 					noise_count = noise_count + 1
 					count_sum = count_sum + count_bin[j]
 #
-			sig_noise = sig_mult * (count_sum / noise_count)
+			sig_noise = sig_mult * math.sqrt( count_sum / noise_count)
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -230,20 +220,19 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 				r_arr[a] = ((rcount-1)*delt_r) + 0.5*delt_r - r_range
 				Lfit_y = []
-				Lfit_y0 = []
 				Lfit_r = []
+				Lfit_y0 = []
+				Lfit_sig = []
 #
 				for a in range(0, r_iter):
 					Lfit_ydum = []
 					Lfit_ndum = []
-					Lfit_ystart = []
-					Lfit_sig = []
 					for b in range(0, len(Lfit_arr[0])):
 						if (Lfit_arr[0][b] == r_arr[a]):
 							Lfit_ydum.append(Lfit_arr[1][b])
 							Lfit_ndum.append(Lfit_arr[2][b])
 					for b in range(0, len(Lfit_ydum)):
-						if (Lfit_ndum[b] > sig_noise ):
+						if (Lfit_ndum[b] > sig_noise):
 							Lfit_y.append(Lfit_ydum[b])
 							Lfit_r.append(r_arr[a])
 							break
@@ -252,15 +241,14 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 							Lfit_y0.append(Lfit_ydum[b])
 							break
 #
-	# Compute sigma value for errors on curve fitting procedure, by defining absolute edge of
-	# PV diagram and calculating rough sigma from difference between sigma_noise bin
+	# Compute sigma value for errors on curve fitting procedure
 #	
-			Lfit_sig = []
-			for a in range(0, len(Lfit_y)):
-				if (Lfit_y[a] == Lfit_y0[a]):
-					Lfit_sig.append(0.5*delt_v)
-				else:
-					Lfit_sig.append( 0.5*( abs(Lfit_y[a] - Lfit_y0[a] ) ) )	
+					print Lfit_y, Lfit_y0, Lfit_r
+
+					if (Lfit_y[a] == Lfit_y0[a]):
+						Lfit_sig.append(0.5*delt_v)
+					else:
+						Lfit_sig.append( 0.5*( abs(Lfit_y[a] - Lfit_y0[a] ) ) )
 #
 	# Change quadrant of LHS fit arrays for correct power index fitting to curve
 #
@@ -269,26 +257,22 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 	# Define function of Keplerian fit
 #	
-			def func(x, a):
-			  return a* np.power(x, -0.5)
+			def func(x, a, b):
+			  return a* np.power(x, -0.5) + b
 #
 	# Fitting routine to PV-diagram, and determination of system mass using Keplerian edge fit
 #
 			coeffs1, fitcov1 = curve_fit(func, Lfit_r[fit_start:fit_stop], \
-			   Lfit_y[fit_start:fit_stop], [1.], \
-			   sigma=Lfit_sig[fit_start:fit_stop])
+			   Lfit_y[fit_start:fit_stop], [1., 1.], \
+			   sigma=Lfit_sig[fit_start:fit_stop], absolute_sigma=True )
 #
 			Lfit_r1 = np.array(Lfit_r)*AUm ; Lfit_y1 = np.array(Lfit_y)*1000.
 			Lfit_sig1 = np.array(Lfit_sig)*1000.
 			coeffs11, fitcov11 = curve_fit(func, Lfit_r1[fit_start:fit_stop], \
-			   Lfit_y1[fit_start:fit_stop], [1e3], \
-			   sigma=Lfit_sig1[fit_start:fit_stop])
-			y_fitted1 = func(Lfit_r[fit_start:fit_stop], coeffs1[0])
-#
-			perr1 = np.sqrt(np.diag(fitcov11))
-#
+			   Lfit_y1[fit_start:fit_stop], [1e10, 1e3], \
+			   sigma=Lfit_sig1[fit_start:fit_stop], absolute_sigma=True)
+			y_fitted1 = func(Lfit_r[fit_start:fit_stop], coeffs1[0], coeffs1[1])
 			M_sys1 = (coeffs11[0]**2.0)/(G*Msol_kg)
-			M_err1 = (perr1[0]**2.0)/(G*Msol_kg) 
 #
 	# Re-convert arrays to original quadrant, and change
 #
@@ -324,8 +308,9 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 				r_arr[a] = ((rcount-1)*delt_r) + 0.5*delt_r
 				Rfit_y = []
-				Rfit_y0 = []
 				Rfit_r = []
+				Rfit_y0 = []
+				Rfit_sig = []
 #
 				for a in range(0, r_iter):
 					Rfit_ydum = []
@@ -336,45 +321,36 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 							Rfit_ndum.append(Rfit_arr[2][b])
 					ind = len(Rfit_ndum)-1
 					for b in range(0, len(Rfit_ydum)):
+						if (Rfit_ndum[b] > 0):
+							Rfit_y0.append(Rfit_ydum[b])
+							break
+						ind = ind - 1
+					ind = len(Rfit_ndum)-1
+					for b in range(0, len(Rfit_ydum)):
 						if (Rfit_ndum[ind] > sig_noise):
 							Rfit_y.append(Rfit_ydum[ind])
 							Rfit_r.append(r_arr[a])
 							break
 						ind = ind - 1
-					ind = len(Rfit_ndum)-1
-					for b in range(0, len(Rfit_ydum)):
-						if (Rfit_ndum[ind] > 0):
-							Rfit_y0.append(Rfit_ydum[ind])
-							break
-						ind = ind - 1
 #
-	# Compute sigma value for errors on curve fitting procedure, by defining absolute edge of
-	# PV diagram and calculating rough sigma from difference between sigma_noise bin
-#	
-			Rfit_sig = []
-			for a in range(0, len(Rfit_y)):
-				if (Rfit_y[a] == Rfit_y0[a]):
-					Rfit_sig.append(0.5*delt_v)
-				else:
-					Rfit_sig.append( 0.5*( abs(Rfit_y[a] - Rfit_y0[a] ) ) )
+	# Compute sigma value for errors on curve fitting procedure
 #
-	# Fitting routine to quadrant data
+					if (Rfit_y[a] == Rfit_y0[a]):
+						Rfit_sig.append(0.5*delt_v)
+					else:
+						Rfit_sig.append( 0.5*( abs(Rfit_y[a] - Rfit_y0[a] ) ) )
 #
 			coeffs2, fitcov2 = curve_fit(func, Rfit_r[fit_start:fit_stop], \
-			   Rfit_y[fit_start:fit_stop], [1.], \
-			   sigma=Rfit_sig[fit_start:fit_stop])
-			y_fitted2 = func(Rfit_r[fit_start:fit_stop], coeffs2[0])
+			   Rfit_y[fit_start:fit_stop], [1., 1.], \
+			   sigma=Rfit_sig[fit_start:fit_stop], absolute_sigma=True )
 #
 			Rfit_r2 = np.array(Rfit_r)*AUm ; Rfit_y2 = np.array(Rfit_y)*1000.
 			Rfit_sig2 = np.array(Rfit_sig)*1000.
 			coeffs22, fitcov22 = curve_fit(func, Rfit_r2[fit_start:fit_stop], \
-			   Rfit_y2[fit_start:fit_stop], [1e3], \
-			   sigma=Rfit_sig2[fit_start:fit_stop])
-#
-			perr2 = np.sqrt(np.diag(fitcov22))
-#
+			   Rfit_y2[fit_start:fit_stop], [1e10, 1e3], \
+			   sigma=Rfit_sig2[fit_start:fit_stop], absolute_sigma=True)
+			y_fitted2 = func(Rfit_r[fit_start:fit_stop], coeffs2[0], coeffs2[1])
 			M_sys2 = (coeffs22[0]**2.0)/(G*Msol_kg)
-			M_err2 = (perr2[0]**2.0)/(G*Msol_kg)
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -383,7 +359,6 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 			pv_mass.append( (M_sys1 + M_sys2) / 2. )
-			pv_mass_err.append( (M_err1 + M_err2) / 2. )
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -393,14 +368,11 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 			if (RL_fitcheck == "TRUE"):
 				print "Mass of the system determined from LHS PV fit is: ", \
-				   round(M_sys1,4), " Solar masses"
+				   round(M_sys1,3), " Solar masses"
 				print "Mass of the system determined from RHS PV fit is: ", \
-				   round(M_sys2,4), " Solar masses"
+				   round(M_sys2,3), " Solar masses"
 				print "Averaged mass from PV diagram fits is: ", \
-				   round(pv_mass[i],4), "Solar masses"
-				print "Error on mass determined from PV diagram is: ", \
-				   round(pv_mass_err[i],5), "Solar masses"
-				
+				   round(pv_mass[i],3), "Solar masses"
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

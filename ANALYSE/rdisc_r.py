@@ -4,7 +4,7 @@
 # Python program to read in rdisc files, and plot temporally evolved parameters
 #
 # Author: Benjamin MacFarlane
-# Date: 28/01/2016
+# Date: 02/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -157,7 +157,7 @@ def read(arch_dir, plotdir, ea_run, hasharr_app, n_accr, r_inspec, v_K, inclin):
 		plt.yticks(fontsize = 8)
 		plt.xticks(fontsize = 8)
 #
-		plt.savefig(plotdir+str(r_inspec)+'AU_evol.png')
+		plt.savefig(plotdir+str(r_inspec)+'AU_evol.pdf')
 		plt.clf()
 #
 #

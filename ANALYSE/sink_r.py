@@ -1,12 +1,12 @@
 #
 # sink_r.py
 #
-# Python program to read in DE05.sink[i] data structures from SEREN analysedisc
-# executable. Uses sink data from disc to output sink parameters for plotting routines in
-# both pdisc_EAr and pdisc_r routines
+# Python program to read in DE05.sink[i] data structures from SEREN analysedisc executable. 
+# Uses sink data from disc to output sink parameters for plotting routines in pdisc_r.
+# Script also provides equivalent simulation time for each snapshot under analysis.
 #
 # Author: Benjamin MacFarlane
-# Date: 29/01/2016
+# Date: 16/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -15,7 +15,7 @@
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-pcAU = 206265.
+pcAU = 206265.			# Conversion from parsec -> AU
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -23,13 +23,8 @@ pcAU = 206265.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-import random
 import math
 import numpy as np
-import sys
-import matplotlib.pyplot as plt
-import pylab
-from astropy.io import ascii
 import glob
 #
 #
@@ -46,47 +41,27 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-	pmass = []
-	pradius = []
-	ptime = []
+	pmass = [] ; pradius = [] ; ptime = []
 	file_list = sorted(glob.glob(arch_dir+'../../../ICs/'+str(ea_run)+'/DE05.sink*'))
 	file_n = len(file_list)
 #
 	# Define arrays to fill
 #
-	time = [[] for i in range(file_n)]
-	mass = [[] for i in range(file_n)]
+	time = [[] for i in range(file_n)] ; mass = [[] for i in range(file_n)] 
 	radius = [[] for i in range(file_n)]
 #
 	for i in range(0,file_n):		
 #
-	# Now loop over lines in each file and extract variables of interest
-	# then convert to numpy format for future data extraction for plotting
+	# Extract useful sink variables and convert to numpy arrays
 #
-		if (snaparr.ndim == 2):
+		f = open(file_list[i], 'r')
+		for line in f:
+			line = line.strip() ; columns = line.split()
+			time[i].append(float(columns[1])*1000.) ; mass[i].append(float(columns[8]))
+			radius[i].append(math.sqrt((float(columns[2])*pcAU/10.)**2 + \
+  			   (float(columns[3])*pcAU/10.)**2 + (float(columns[4])*pcAU/10.)**2))
+		f.close()
 #
-			f = open(file_list[i], 'r')
-			for line in f:
-				line = line.strip() ; columns = line.split()
-				time[i].append(float(columns[1])*1000.)
-				mass[i].append(float(columns[8]))
-				radius[i].append(math.sqrt((float(columns[2])*pcAU/10.)**2 + \
-			   	   (float(columns[3])*pcAU/10.)**2 + \
-				   (float(columns[4])*pcAU/10.)**2))
-			f.close()
-#
-		elif (snaparr.ndim == 1):
-#
-			f = open(file_list[i], 'r')
-			for line in f:
-				line = line.strip() ; columns = line.split()
-				time[i].append(float(columns[1])*1000.)
-				mass[i].append(float(columns[8]))
-				radius[i].append(math.sqrt((float(columns[2])*pcAU/10.)**2 + \
-   				   (float(columns[3])*pcAU/10.)**2 + \
-				   (float(columns[4])*pcAU/10.)**2))
-			f.close()
-
 	time = np.array(time) ; mass = np.array(mass) ; radius = np.array(radius)
 #
 #
@@ -108,9 +83,9 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 		pmass = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
 		pradius = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
 		ptime = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
-		for a in range(0,len(time)):	# Loop over number of sinks
-			for i in range(0,len(timearr)):	# Loop over time of snapshot under analysis
-				for t_s in range(0, len(time[a])):	# Loopover timesnaps in sink file
+		for a in range(0,len(time)):							    # Loop over number of sinks
+			for i in range(0,len(timearr)):						    # Loop over time of snapshot under analysis
+				for t_s in range(0, len(time[a])):				    # Loopover timesnaps in sink file
 					if (round(timearr[i], 3) == round(time[a][t_s], 3) ):
 						pmass[a][i] = mass[a][t_s]
 						pradius[a][i] = radius[a][t_s]
@@ -143,5 +118,3 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 #
 #
 	return pmass, pradius, timearr
-#
-#

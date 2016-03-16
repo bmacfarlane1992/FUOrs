@@ -4,7 +4,7 @@
 # Programme to plot comparison of masses in simulation and PV diagram analyses
 #
 # Author: Benjamin MacFarlane
-# Date: 19/02/2016
+# Date: 02/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -15,14 +15,13 @@
 #
 print_term = "FALSE"
 #
-t_ref = 2.5
-#
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		# # # - - - MODULE IMPORTS - - - # # #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
+import os
 import random
 import math
 import numpy as np
@@ -38,8 +37,8 @@ from scipy.optimize import curve_fit
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, pmass, m_d_kep, \
-   m_d_piv, m_d_sigALMA, pv_mass):
+def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d, pmass, m_d_kep, \
+   m_d_piv, m_d_sigALMA, pv_mass, EA_lenref):
 #
 	print "Mass comparisons of simulation and PV data now being plotted"
 #
@@ -59,7 +58,7 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, pmass, m
 		for i in range(0, len(snaparr)):
 			snaparr_tmp[fcount] = snaparr[i]
 			timearr_tmp[fcount] = timearr[i]
-			for a in range(0, len(pmass)):
+			for a in range(1, len(pmass)):
 				pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i]
 			fcount = fcount + 1
 #
@@ -75,7 +74,7 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, pmass, m
 			for j in range(0, len(snaparr[0])):
 				snaparr_tmp[fcount] = snaparr[i][j]
 				timearr_tmp[fcount] = timearr[i][j]
-				for a in range(0, len(pmass)):
+				for a in range(1, len(pmass)):
 					pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i][j]
 				fcount = fcount + 1
 #
@@ -91,46 +90,34 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, pmass, m
 #
 	for i in range(0, file_n):
 #
-		m_sys_kep[i] = m_s[i] + pmass_tmp[i] + m_d_kep[i]
-		m_sys_piv[i] = m_s[i] + pmass_tmp[i] + m_d_piv[i]
-		m_sys_sigALMA[i] = m_s[i] + pmass_tmp[i] + m_d_sigALMA[i]
+		m_sys_kep[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_kep[i]
+		m_sys_piv[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_piv[i]
+		m_sys_sigALMA[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_sigALMA[i]
+#		m_sys_kep[i] = m_d_kep[i] ; m_sys_piv[i] = m_d_piv[i] ; m_sys_sigALMA[i] = m_d_sigALMA[i]
 #
 		if (print_term == "TRUE"):
 			print "for snaparr value: "+str(snaparr_tmp[i])
-			print "\tMass of central protostar: "+str(m_s[i])
+			print "\tMass of central protostar: "+str(m_s[i]+m_mri_d[i])
 			print "\tMass of planets in disc: "+str(pmass_tmp[i])
-			print "\tMass of system (Keplerian velocity criterion): "+str(m_sys_kep[i])
-			print "\tMass of system (Oribit infall criterion): "+str(m_sys_piv[i])
-			print "\tMass of system (ALMA density criterion): "+str(m_sys_sigALMA[i])
+			print "\tMass of star+disc+planets (Keplerian velocity criterion): "+str(m_sys_kep[i])
+			print "\tMass of star+disc+planets (Oribit infall criterion): "+str(m_sys_piv[i])
+			print "\tMass of star+disc+planets (ALMA density criterion): "+str(m_sys_sigALMA[i])
 			print "\tMass of system (Keplerian fitted P-V diagram): "+str(pv_mass[i])
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Define simulation independent time dimension, tau to evaluate differences between #
-	# simulation and PV determined system masses
+	# Read in accretion parameters
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #
 #
-	t_len = [] ; t_cen = [] ; t_b1 = [] ; t_b2 = [] ; t_s = [] ; t_e = []
+	t_s = [] ; t_e = []
+	f = open(arch_dir+'../acc_params.dat','r')
+	for line in f:
+		line = line.strip() ; columns = line.split()
+		t_s.append(float(columns[0])) ; t_e.append(float(columns[1]))
+	f.close()
+	t_s = np.array(t_s) ; t_e = np.array(t_e)
 #
-	if (snaparr.ndim == 2):
-#
-		f = open('../DATA/'+str(ea_run)+'/acc_params.dat', 'r')
-		for line in f:
-			line = line.strip() ; columns = line.split()
-			t_len.append(float(columns[0])) ; t_cen.append(float(columns[1]))
-			t_b1.append(float(columns[2])) ; t_b2.append(float(columns[3]))
-			t_s.append(float(columns[4])) ; t_e.append(float(columns[5]))
-		f.close()
-
-#
-		tau = [0] * file_n
-		for i in range(0, file_n):
-			for j in range(0, len(t_len)):	
-				if ( (timearr_tmp[i] > t_b1[j]) and \
-				   (timearr_tmp[i] < t_b2[j]) ):
-#
-					tau[i] = ( (timearr_tmp[i] + t_len[j] - t_ref) / t_cen[j]) - 1.
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -138,22 +125,30 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, pmass, m
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #
 #
-		plt.figure(1)
-		ax1 = plt.subplot(111)
+	plt.figure(1)
+	ax1 = plt.subplot(111)
 #
-		plt.plot(timearr_tmp, pv_mass, linestyle = 'dashed', color = 'b', label = 'PV')
-		plt.plot(timearr_tmp, m_sys_kep, linestyle = 'solid', color = 'g', label = 'Keplerian')
-		plt.plot(timearr_tmp, m_sys_piv, linestyle = 'solid', color = 'r', label = 'Orbit infall')
-		plt.plot(timearr_tmp, m_sys_sigALMA, linestyle = 'solid', color = 'k', label = 'ALMA SD')
-		plt.ylim(0, ax1.get_ylim()[1])
-		for i in range(0, len(t_len)):
-			plt.fill_between((t_s[i], t_e[i]), \
-			   0, ax1.get_ylim()[1], color='k', alpha = 0.5)
+	mass_stack = pv_mass + m_sys_kep + m_sys_piv + m_sys_sigALMA
+	max_mass = max(mass_stack)+0.1
 #
-		legend = plt.legend(loc = 'upper left', fontsize=8)
-		plt.xlabel('Time, '+(r'$\tau$') )
-		plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
-		plt.savefig(plotdir+'mass_comp.png')
-		plt.clf()
+	for i in range(0,len(t_e)):
+		plt.fill_between([t_s[i],t_e[i]], 0, max_mass, color='k', alpha = 0.5)
+	plt.scatter(timearr_tmp, pv_mass, \
+	   label = 'PV', s=80, facecolors='none', edgecolors='b')
+	plt.scatter(timearr_tmp, m_sys_kep, \
+	   label = 'Keplerian', marker = '+', s=80, facecolors='none', edgecolors='g')
+	plt.scatter(timearr_tmp, m_sys_piv, \
+	   label = 'Orbit infall', marker = 's', s=80, facecolors='none', edgecolors='r')
+	plt.scatter(timearr_tmp, m_sys_sigALMA, \
+	   label = 'ALMA SD', marker = '^', s=80, facecolors='none', edgecolors='k')
+	plt.ylim(0, ax1.get_ylim()[1])
+	legend = plt.legend(loc = 'upper left', fontsize=8, scatterpoints=1)
+	if (snaparr.ndim == 2):
+		plt.xlim(timearr_tmp[3]-0.25, timearr_tmp[8]+0.25)
+	plt.ylim(0, max_mass)
+	plt.xlabel('Time (kyr)' )
+	plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
+	plt.savefig(plotdir+'mass_comp.pdf')
+	plt.clf()
 #
 #
