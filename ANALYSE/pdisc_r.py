@@ -1,12 +1,12 @@
 #
 # pdisc_r.py
 #
-# Python program to read in  pdisc (radially varied, temporally static) data structures. 
+# Python program to read in pdisc (radially varied, temporally static) data structures. 
 # Uses information of file name to generate plots analogous to Stamatellos, 
 # Whitworth & Hubber (2012) work.
 #
 # Author: Benjamin MacFarlane
-# Date: 16/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -24,7 +24,9 @@ col_arr = ["b", "g", "r", "c", "m", "k"]
 #
 def func(x, a, b):			# Linear function used to fit power indices to log-log Sig/T vs. radius distributions
   return a*x + b
-r_fit = 50				# Radial point after which power indices fit to data as described above
+#
+r_start = 1				# Radial index to start log plots (must be > 1)
+r_fit = 5				# Radial point after which power indices fit to data as described above
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -132,7 +134,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# - - - NON-EA RUNS - - - # 
+	# - - - NON-EA RUNS
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -179,45 +181,36 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 # Plot surface density vs. radius for singular accretion event
 # First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
 #
-		coeffs1 = [0]*len(snaparr_tmp) ; coeffs2 = [0]*len(snaparr_tmp)
-		matcov1 = [0]*len(snaparr_tmp) ; matcov2 = [0]*len(snaparr_tmp)
-		y_fitted1 = [[0]*len(sig[0,0:r_limit] ) ]*len(snaparr_tmp)
-		y_fitted2 = [[0]*len(sig[0,0:r_limit] ) ]*len(snaparr_tmp)
+		coeffs = [0]*len(snaparr_tmp) ; matcov = [0]*len(snaparr_tmp)
+		y_fitted = [[0]*len(sig[0,r_fit:r_limit] ) ]*len(snaparr_tmp)
 #
 		plt.figure(1)
 		ax1 = plt.subplot(111)
 		for i in range(0, len(snaparr_tmp)):
 #
-			coeffs1[i], matcov1[i] = curve_fit(func, r[snaparr_tmp[i],5:r_fit], \
-			   np.log10(sig[snaparr_tmp[i],5:r_fit]), [1, 1])
-			y_fitted1[i] = func(r[snaparr_tmp[i],5:r_fit], coeffs1[i][0], coeffs1[i][1])
-#
-			coeffs2[i], matcov2[i] = curve_fit(func, r[snaparr_tmp[i],r_fit:r_limit], \
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
 			   np.log10(sig[snaparr_tmp[i],r_fit:r_limit]), [1, 1])
-			y_fitted2[i] = func(r[snaparr_tmp[i],r_fit:r_limit], coeffs2[i][0], \
-			   coeffs2[i][1])
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
+			    coeffs[i][0], coeffs[i][1])
 #
 			if (spline == "TRUE"):
-				rnew = np.arange(5,r_limit,r_limit/(r_limit/3))
+				rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
 #
-				tck = interpolate.splrep(r[snaparr_tmp[i],5:r_limit], \
-				   sig[snaparr_tmp[i],5:r_limit])
+				tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
+				   sig[snaparr_tmp[i],r_start:r_limit])
 				signew = interpolate.splev(rnew, tck, der = 0)
 #
-				line1 = plt.plot(rnew, np.log10(signew), \
+				line1 = plt.plot(np.log10(rnew), np.log10(signew), \
 				   color = col_arr[i])
 #
 			elif (spline == "FALSE"):
-				line1 = plt.plot(r[snaparr_tmp[i],0:r_limit], \
-				   np.log10(sig[snaparr_tmp[i],0:r_limit]), \
+				line1 = plt.plot(np.log10(r[snaparr_tmp[i],r_start:r_limit]), \
+				   np.log10(sig[snaparr_tmp[i],r_start:r_limit]), \
 			   	color = col_arr[i])
 #
-			line2 = plt.plot(r[snaparr_tmp[i],5:r_fit], y_fitted1[i], \
+			line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), y_fitted[i], \
 			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs1[i][0])), 4)) )
-			line3 = plt.plot(r[snaparr_tmp[i],r_fit:r_limit], y_fitted2[i], \
-			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs2[i][0])), 4)) )
+			   label = "-"+str(round(np.log10(abs(coeffs[i][0])), 4)) )
 #
 		plt.xlabel("Disc radius (AU)", fontsize = 8) 
 		plt.ylabel("log Surface density", fontsize = 8, labelpad=0.5)
@@ -232,50 +225,42 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 		if (powerfit_check == "TRUE"):
 			print "\n Surface density power law fits \n"
 			for i in range(0, len(snaparr_tmp)):
-				print "Power index for the "+snaparr_tmp[i]+"th snapshot of " \
+				print "Power index for the "+snaparr_tmp[i]+" snapshot of " \
 				   +str(ea_run)+" is: ",  \
-				   str(round(np.log10(abs(coeffs1[i][0] )), 4)), \
-				   str(round(np.log10(abs(coeffs2[i][0])), 4))+" \n"
+				   str( round( coeffs[i][0] , 4 ) )+" \n"
 #
 # Plot temperature vs. radius for singular accretion event
 # First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
 #
-		coeffs1 = [0]*len(snaparr_tmp) ; coeffs2 = [0]*len(snaparr_tmp)
-		matcov1 = [0]*len(snaparr_tmp) ; matcov2 = [0]*len(snaparr_tmp)
-		y_fitted1 = [[0]*len(T[0,0:r_limit] ) ]*len(snaparr_tmp)
-		y_fitted2 = [[0]*len(T[0,0:r_limit] ) ]*len(snaparr_tmp)
+		coeffs = [0]*len(snaparr_tmp) ; matcov = [0]*len(snaparr_tmp)
+		y_fitted = [[0]*len(T[0,r_fit:r_limit] ) ]*len(snaparr_tmp)
 #
 		plt.figure(1)
 		ax1 = plt.subplot(111)
 		for i in range(0, len(snaparr_tmp)):
 #
-			coeffs1[i], matcov1[i] = curve_fit(func, r[snaparr_tmp[i],5:r_fit], \
-			   np.log10(T[snaparr_tmp[i],5:r_fit]), [1, 1])
-			y_fitted1[i] = func(r[snaparr_tmp[i],5:r_fit], coeffs1[i][0], coeffs1[i][1])
-#
-			coeffs2[i], matcov2[i] = curve_fit(func, r[snaparr_tmp[i],r_fit:r_limit], \
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
 			   np.log10(T[snaparr_tmp[i],r_fit:r_limit]), [1, 1])
-			y_fitted2[i] = func(r[snaparr_tmp[i],r_fit:r_limit], coeffs2[i][0], \
-			   coeffs2[i][1])
-			if (spline == "TRUE"):
-				rnew = np.arange(5,r_limit,r_limit/(r_limit/3))
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
+			   coeffs[i][0], coeffs[i][1])
 #
-				tck = interpolate.splrep(r[snaparr_tmp[i],5:r_limit], \
-				   T[snaparr_tmp[i],5:r_limit])
+			if (spline == "TRUE"):
+				rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+#
+				tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
+				   T[snaparr_tmp[i],r_start:r_limit])
 				Tnew = interpolate.splev(rnew, tck, der = 0)
 #
-				line1 = plt.plot(rnew, np.log10(Tnew), \
+				line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
 				   color = col_arr[i])
 #
 			elif (spline == "FALSE"):
-				line1 = plt.plot(r[snaparr_tmp[i],0:r_limit], \
-				   np.log10(T[snaparr_tmp[i],0:r_limit]), color = col_arr[i])
-			line2 = plt.plot(r[snaparr_tmp[i],5:r_fit], y_fitted1[i], \
+				line1 = plt.plot(np.log10(r[snaparr_tmp[i],r_start:r_limit]), \
+				   np.log10(T[snaparr_tmp[i],r_start:r_limit]), color = col_arr[i])
+#
+			line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), y_fitted[i], \
 			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs1[i][0])), 4)) )
-			line3 = plt.plot(r[snaparr_tmp[i],r_fit:r_limit], y_fitted2[i], \
-			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs2[i][0])), 4)) )
+			   label = "-"+str(round(np.log10(abs(coeffs[i][0])), 4)) )
 #
 		plt.xlabel("Disc radius (AU)", fontsize = 8) 
 		plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
@@ -290,10 +275,9 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 		if (powerfit_check == "TRUE"):
 			print "\n Temperature power law fits \n"
 			for i in range(0, len(snaparr_tmp)):
-				print "Power index for the "+snaparr_tmp[i]+"th snapshot of "+ \
+				print "Power index for the "+snaparr_tmp[i]+" snapshot of "+ \
 				   str(ea_run)+" is: ",  \
-				   str(round(np.log10(abs(coeffs1[i][0])), 4)), \
-				   str(round(np.log10(abs(coeffs2[i][0])), 4))+" \n"
+				   str(round( coeffs[i][0], 4 ) )+" \n"
 #
 # Plot azimuthal velocity vs. radius for singular accretion event. Compare data of before/during/
 # after event with analytic calculation of Keplerian velocity for snapshot
@@ -316,8 +300,8 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 	# If a planet is present, overplot onto x-axis with hashed line
 #
 		if (len(pmass) > 0):
-			for a in range(0, len(pmass)):
-				for idash in range(0, len(pmass[0])):
+			for a in range(1, len(pmass)):
+				for idash in range(1, len(pmass[0])):
 					if (pmass[a][idash] != 0.):
 						ax1.plot(pradius[a][idash], \
 						   vkep[snaparr_tmp[idash],int(pradius[a][idash])], \
@@ -335,9 +319,11 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 # First, make sure arrays defined where velocity condition not met to create continuous fill plots
 #
 #
-		n_ax = 311
+		plt.figure(2)
+		fig.subplots_adjust(hspace=0.7, wspace = 0.4)
+#
 		for a in range(0, len(snaparr_tmp)):
-			ax1 = plt.subplot(n_ax)
+			ax1 = plt.subplot(311+a)
 			vcondarr1 = [] ; vcondarr2 = [] ; vcondarr3 = []
 			jstart = 0
 			for i in range(0, 401):
@@ -385,18 +371,15 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			plt.xlabel("Disc radius (AU)") ; plt.ylabel("|v|"+' (km'+(r's$^{-1}$')+')')
 			plt.xlim(0,r_limit) ; plt.ylim(0., max(vkep[snaparr_tmp[a],1:r_limit]))
 			plt.title(str(round(timearr[a], 2))+") kyr snapshot")
-			plt.legend(loc='upper right', fontsize=12)
-			n_ax = n_ax+1
 #
+		plt.legend(loc='upper right', fontsize = 6)
 		plt.savefig(str(plotdir)+'vthe_restr.pdf') ; plt.clf()
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# - - - EA RUNS [ VARYING OUTBURST DURATION ]- - - # 
+	# - - - EA RUNS [ VARYING OUTBURST DURATION ]
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
-#
-	# For EA runs, plot parameters comparing SHORT, MEDIUM and LONG snapshots
 #
 	if (snaparr_tmp.ndim == 2):
 #
@@ -429,238 +412,219 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				leg_point = EA_timeref
 			elif (lendur == 1):
 				title_point = EA_timeref
-				title_point = EA_lenref
+				leg_point = EA_lenref
 				snaparr_tmp = np.rot90(snaparr_tmp, 2)
 #
-		for i in range(0,len(snaparr_tmp)):
+			for i in range(0,len(snaparr_tmp)):
 #
-			fig = plt.figure(1)
+				fig = plt.figure(1)
 #
-			fig.subplots_adjust(hspace=.3, wspace = 0.4)
-			fig.suptitle('Disc parameters '+title_point[i]+' for R < '+str(r_limit)+ \
-			   ' AU', fontsize=10)
+				fig.subplots_adjust(hspace=.3, wspace = 0.4)
+				fig.suptitle('Disc parameters '+title_point[i]+' for R < '+str(r_limit)+ \
+				   ' AU', fontsize=10)
 #
-			ax1 = plt.subplot(221)
-			for j in range(0, len(snaparr_tmp[0])):
-				line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-				   Q[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
-			plt.ylim(ax1.get_ylim()[0], 20)
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				ax1 = plt.subplot(221)
+				for j in range(0, len(snaparr_tmp[0])):
+					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   Q[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
+				plt.ylim(ax1.get_ylim()[0], 20)
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
-			ax2 = plt.subplot(222)
-			for j in range(0, len(snaparr_tmp[0])):
-				line2 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-				   np.log10(T[snaparr_tmp[i][j],0:r_limit]), \
-				   label = "t = "+str(round(timearr[i][j], 2))+" kyr "+ \
-				   EA_timeref[j], color = col_arr[j])
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
-			plt.ylim(ax2.get_ylim()[0], ax2.get_ylim()[1])
- 			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-			plt.legend(loc='upper right', fontsize=6)
+				ax2 = plt.subplot(222)
+				for j in range(0, len(snaparr_tmp[0])):
+					line2 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   np.log10(T[snaparr_tmp[i][j],0:r_limit]), \
+					   label = "t = "+str(round(timearr[i][j], 2))+" kyr "+ \
+					   EA_timeref[j], color = col_arr[j])
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
+				plt.ylim(ax2.get_ylim()[0], ax2.get_ylim()[1])
+ 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				plt.legend(loc='upper right', fontsize=6)
 #
-			ax3 = plt.subplot(223)
-			for j in range(0, len(snaparr_tmp[0])):
-				line3 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-				   rInM[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
-			plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel("Disc mass "+(r'(M$_{\odot}$)'), fontsize = 8, labelpad=0.5)
-			plt.ylim(ax3.get_ylim()[0], ax3.get_ylim()[1])
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				ax3 = plt.subplot(223)
+				for j in range(0, len(snaparr_tmp[0])):
+					line3 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   rInM[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
+				plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("Disc mass "+(r'(M$_{\odot}$)'), fontsize = 8, labelpad=0.5)
+				plt.ylim(ax3.get_ylim()[0], ax3.get_ylim()[1])
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
-			ax4 = plt.subplot(224)
-			for j in range(0, len(snaparr_tmp[0])):
-				line4 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-				   v_r[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel((r'v$_{r}$')+' (km'+(r's$^{-1}$')+')',fontsize = 8,labelpad=0.5)
-			plt.ylim(ax4.get_ylim()[0], ax4.get_ylim()[1])
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				ax4 = plt.subplot(224)
+				for j in range(0, len(snaparr_tmp[0])):
+					line4 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   v_r[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel((r'v$_{r}$')+' (km'+(r's$^{-1}$')+')',fontsize = 8,labelpad=0.5)
+				plt.ylim(ax4.get_ylim()[0], ax4.get_ylim()[1])
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
-			plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU_'+EA_lenref[i]+'.pdf')
-			plt.clf()
+				plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU_'+EA_lenref[i]+'.pdf')
+				plt.clf()
 #
 # Plot surface density vs. radius for comparative accretion reference times. 
 # First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
 #
-			coeffs1 = [0]*len(snaparr_tmp[0]) ; coeffs2 = [0]*len(snaparr_tmp[0])
-			matcov1 = [0]*len(snaparr_tmp[0]) ; matcov2 = [0]*len(snaparr_tmp[0])
-			y_fitted1 = [[0]*len(sig[snaparr_tmp[0][0],5:r_limit] ) ]*len(snaparr_tmp[0])
-			y_fitted2 = [[0]*len(sig[snaparr_tmp[0][0],r_fit:r_limit] ) ]*len(snaparr_tmp[0])
+				coeffs = [0]*len(snaparr_tmp[0]) ; matcov = [0]*len(snaparr_tmp[0])
+				y_fitted = [[0]*len(sig[snaparr_tmp[0][0],r_fit:r_limit] ) ]*len(snaparr_tmp[0])
 #
-			plt.figure(1)
+				plt.figure(1)
 #
-			ax1 = plt.subplot(111)
+				ax1 = plt.subplot(111)
 #
-			for j in range(0, len(snaparr_tmp[0])):
-				coeffs1[j], matcov1[j] = curve_fit(func, r[snaparr_tmp[i][j],5:r_fit], \
-				   np.log10(sig[snaparr_tmp[i][j],5:r_fit]), [1, 1])
-				y_fitted1[j] = func(r[snaparr_tmp[i][j],5:r_fit], \
-				   coeffs1[j][0], coeffs1[j][1])
+				for j in range(0, len(snaparr_tmp[0])):
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					   np.log10(sig[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					   coeffs[j][0], coeffs[j][1])
+#
+					if (spline == "TRUE"):
+						rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+#
+						tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
+						   sig[snaparr_tmp[i][j],r_start:r_limit])
+						signew = interpolate.splev(rnew, tck, der = 0)
+#
+						line1 = plt.plot(np.log10(rnew), np.log10(signew), \
+						   color = col_arr[j])
+#
+					elif (spline == "FALSE"):
+						line1 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_start:r_limit]), \
+						   np.log10(sig[snaparr_tmp[i][j],r_start:r_limit]), \
+					   	   color = col_arr[j])
+#
+					line2 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), y_fitted[j], 
+					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
+					   label = "-"+str(round(np.log10(abs(coeffs[j][0])), 4)) )
+#
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("log Surface Density", fontsize = 8, labelpad=0.5)
+				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
+				   fontsize=6)
 #	
-				coeffs2[j], matcov2[j] = curve_fit(func, r[snaparr_tmp[i][j],r_fit:r_limit], \
-				   np.log10(sig[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
-				y_fitted2[j] = func(r[snaparr_tmp[i][j],r_fit:r_limit], \
-				   coeffs2[j][0], coeffs2[j][1])
-				#
-				if (spline == "TRUE"):
-					rnew = np.arange(5,r_limit,r_limit/(r_limit/3))
-#
-					tck = interpolate.splrep(r[snaparr_tmp[i][j],5:r_limit], \
-					   sig[snaparr_tmp[i][j],5:r_limit])
-					signew = interpolate.splev(rnew, tck, der = 0)
-#
-					line1 = plt.plot(rnew, np.log10(signew), \
-					   color = col_arr[j])
-#
-				elif (spline == "FALSE"):
-					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-					   np.log10(sig[snaparr_tmp[i][j],0:r_limit]), \
-				   	   color = col_arr[j])
-#
-				line2 = plt.plot(r[snaparr_tmp[i][j],5:r_fit], y_fitted1[j], 
-				   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-				   label = "-"+str(round(np.log10(abs(coeffs1[j][0])), 4)) )
-				line3 = plt.plot(r[snaparr_tmp[i][j],r_fit:r_limit], y_fitted2[j], \
-				   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-				   label = "-"+str(round(np.log10(abs(coeffs2[j][0])), 4)) )
-#
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel("log Surface Density", fontsize = 8, labelpad=0.5)
-			plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-			plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
-			   fontsize=6)
-#	
-			plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
-			plt.clf()	
+				plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
+				plt.clf()	
 #
 # Print power law fits to surface density profiles
 #
-			if (powerfit_check == "TRUE"):
-				print "\n Surface density power law fits \n"
-				for j in range(0, len(snaparr_tmp)):
-					print "Power index for the "+str(snaparr_tmp[i][j]) \
-					   +"th snapshot of "+str(ea_run)+" is: ",  \
-					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
-					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
+				if (powerfit_check == "TRUE"):
+					print "\n Surface density power law fits \n"
+					for j in range(0, len(snaparr_tmp)):
+						print "Power index for the "+str(snaparr_tmp[i][j]) \
+						   +" snapshot of "+str(ea_run)+" is: ",  \
+						   str( round( coeffs[j][0] , 4 ) )+" \n"
 #
 # Plot temperature vs. radius for comparative accretion reference times. 
 # First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
 #
-			coeffs1 = [0]*len(snaparr_tmp[0]) ; coeffs2 = [0]*len(snaparr_tmp[0])
-			matcov1 = [0]*len(snaparr_tmp[0]) ; matcov2 = [0]*len(snaparr_tmp[0])
-			y_fitted1 = [[0]*len(T[snaparr_tmp[0][0],0:r_limit] ) ]*len(snaparr_tmp[0])
-			y_fitted2 = [[0]*len(T[snaparr_tmp[0][0],0:r_limit] ) ]*len(snaparr_tmp[0])
+				coeffs = [0]*len(snaparr_tmp[0]) ;  matcov = [0]*len(snaparr_tmp[0])
+				y_fitted = [[0]*len(T[snaparr_tmp[0][0],r_fit:r_limit] ) ]*len(snaparr_tmp[0])
 #
-			plt.figure(1)
+				plt.figure(1)
 #
-			ax1 = plt.subplot(111)
+				ax1 = plt.subplot(111)
 #
-			for j in range(0, len(snaparr_tmp[0])):
-				coeffs1[j], matcov1[j] = curve_fit(func, r[snaparr_tmp[i][j],5:r_fit], \
-				   np.log10(T[snaparr_tmp[i][j],5:r_fit]), [1, 1])
-				y_fitted1[j] = func(r[snaparr_tmp[i][j],5:r_fit], \
-				   coeffs1[j][0], coeffs1[j][1])
+				for j in range(0, len(snaparr_tmp[0])):
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					   np.log10(T[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					   coeffs[j][0], coeffs[j][1])
 #
-				coeffs2[j], matcov2[j] = curve_fit(func, r[snaparr_tmp[i][j],r_fit:r_limit], \
-				   np.log10(T[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
-				y_fitted2[j] = func(r[snaparr_tmp[i][j],r_fit:r_limit], \
-				   coeffs2[j][0], coeffs2[j][1])
+					if (spline == "TRUE"):
+						rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
 #
-				if (spline == "TRUE"):
-					rnew = np.arange(5,r_limit,r_limit/(r_limit/3))
+						tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
+						   T[snaparr_tmp[i][j],r_start:r_limit])
+						Tnew = interpolate.splev(rnew, tck, der = 0)
 #
-					tck = interpolate.splrep(r[snaparr_tmp[i][j],5:r_limit], \
-					   T[snaparr_tmp[i][j],5:r_limit])
-					Tnew = interpolate.splev(rnew, tck, der = 0)
+						line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
+						   color = col_arr[j])
 #
-					line1 = plt.plot(rnew, np.log10(Tnew), \
-					   color = col_arr[j])
+					elif (spline == "FALSE"):
+						line1 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_start:r_limit]), \
+						   np.log10(T[snaparr_tmp[i][j],r_start:r_limit]), \
+					   	   color = col_arr[j])
 #
-				elif (spline == "FALSE"):
-					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-					   np.log10(T[snaparr_tmp[i][j],0:r_limit]), \
-				   	   color = col_arr[j])
+					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit:r_limit], y_fitted[j], 
+					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
+					   label = "-"+str(round(np.log10(abs(coeffs[j][0])), 4)) )
 #
-				line2 = plt.plot(r[snaparr_tmp[i][j],5:r_fit], y_fitted1[j], 
-				   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-				   label = "-"+str(round(np.log10(abs(coeffs1[j][0])), 4)) )
-				line3 = plt.plot(r[snaparr_tmp[i][j],r_fit:r_limit], y_fitted2[j], \
-				   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-				   label = "-"+str(round(np.log10(abs(coeffs2[j][0])), 4)) )
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
+				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
+				   fontsize=6)
 #
-			plt.xlabel("Disc radius (AU)", fontsize = 8) 
-			plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
-			plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-			plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
-			   fontsize=6)
-#
-			plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
-			plt.clf()	
+				plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
+				plt.clf()	
 #
 # Print power law fits to surface density profiles
 #
-			if (powerfit_check == "TRUE"):
-				print "\n Temperature power law fits \n"
-				for j in range(0, len(snaparr_tmp[0])):
-					print "Power index for the "+str(snaparr_tmp[i][j]) \
-					   + "th snapshot of "+str(ea_run)+" is: ",  \
-					   str(round(np.log10(abs(coeffs1[j][0] )), 4)), \
-					   str(round(np.log10(abs(coeffs2[j][0])), 4))+" \n"
+				if (powerfit_check == "TRUE"):
+					print "\n Temperature power law fits \n"
+					for j in range(0, len(snaparr_tmp[0])):
+						print "Power index for the "+str(snaparr_tmp[i][j]) \
+						   + " snapshot of "+str(ea_run)+" is: ",  \
+						   str( round( coeffs[j][0] , 4 ) ) +" \n"
 #
 # Compare velocity data with analytic calculation of Keplerian velocity
 #
-			plt.figure(1)
-			ax1 = plt.subplot(111)
-			plt.title('Azimuthal velocity vs. radius for '+str(title_point[i])+' run')
+				plt.figure(1)
+				ax1 = plt.subplot(111)
+				plt.title('Azimuthal velocity vs. radius for '+str(title_point[i])+' run')
 #
-			for j in range(0, len(snaparr_tmp[0])):
+				for j in range(0, len(snaparr_tmp[0])):
 
-				line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
-				   abs(v_the[snaparr_tmp[i][j],0:r_limit]), color=col_arr[j])
-				line2 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], 
-				   vkep[snaparr_tmp[i][j],0:r_limit], \
-				   label = 'Keplerian velocity ('+str(leg_point[j])+' analytical)', \
-				   linewidth = 2, linestyle = 'dashed', color=col_arr[j])
+					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   abs(v_the[snaparr_tmp[i][j],0:r_limit]), color=col_arr[j])
+					line2 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], 
+					   vkep[snaparr_tmp[i][j],0:r_limit], \
+					   label = 'Keplerian velocity ('+str(leg_point[j])+' analytical)', \
+					   linewidth = 2, linestyle = 'dashed', color=col_arr[j])
 #
-	# If a planet is present, overplot onto x-axis with hashed line
+	# If a planet is present, overplot onto computed Keplerian profile with filled circle
 #
-				if (len(pmass) > 0):
-					for a in range(0, len(pmass)):
-						if (pmass[a][i][j] != 0.):
-							ax1.plot(pradius[a][i][j],
-							   vkep[snaparr_tmp[i][j],int(pradius[a][i][j])], \
-							   col_arr[j]+'o', markersize=10.0)
+					if (len(pmass) > 0):
+						for a in range(1, len(pmass)):
+							if (pmass[a][i][j] != 0.):
+								ax1.plot(pradius[a][i][j],
+								   vkep[snaparr_tmp[i][j],int(pradius[a][i][j])], \
+								   col_arr[j]+'o', markersize=10.0)
 #
-				if (r_d_kep != 0):
-					plt.axvline(x=r_d_kep[snaparr_tmp[i][j]], linewidth = 2, \
-					   linestyle = 'dotted', color = col_arr[j])
+					if (r_d_kep != 0):
+						plt.axvline(x=r_d_kep[snaparr_tmp[i][j]], linewidth = 2, \
+						   linestyle = 'dotted', color = col_arr[j])
 #
-			plt.xlabel("Disc radius (AU)", fontsize = 8)
-			plt.ylabel(''+(r'v$_{\phi}$')+' (km'+(r's$^{-1}$')+')', \
-			   fontsize = 8, labelpad=0.5)
-			plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1]/2.) ; plt.xlim(0, r_limit)
-			plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-			plt.legend(loc='upper right', fontsize=6)
+				plt.xlabel("Disc radius (AU)", fontsize = 8)
+				plt.ylabel(''+(r'v$_{\phi}$')+' (km'+(r's$^{-1}$')+')', \
+				   fontsize = 8, labelpad=0.5)
+				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1]/2.) ; plt.xlim(0, r_limit)
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				plt.legend(loc='upper right', fontsize=6)
 #
-			plt.savefig(str(plotdir)+'Azi_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
-			plt.clf()
+				plt.savefig(str(plotdir)+'Azi_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
+				plt.clf()
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# - - - PLOT ABSOLUTE VELOCITY COMPARED TO EXPECTED KEPLERIAN VELOCITY PROFILES - - - # 
+	# - - - PLOT ABSOLUTE VELOCITY COMPARED TO EXPECTED KEPLERIAN VELOCITY PROFILES
+	# - - - Note: Only for evaulation of single accretion events
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
 # First, make sure arrays defined where velocity condition not met to create continuous fill plots
 #
 		for a in range(0, len(snaparr_tmp)):
-			fig = plt.figure(2, figsize=(20,15))
+#
+			fig = plt.figure(2)
+			fig.subplots_adjust(hspace=0.7, wspace = 0.4)
 #
 			for b in range(0, len(snaparr_tmp[0])):
 				ax1 = plt.subplot(311+b)
@@ -713,8 +677,8 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				plt.xlim(0,r_limit) ; plt.ylim(0., max(vkep[snaparr_tmp[a][b],1:r_limit]))
 				plt.title(str(EA_timeref[b]) \
 				   +" accretion event ("+str(round(timearr[a][b], 2))+") kyr)")
-				plt.legend(loc='upper right', fontsize=12)
 #
+			plt.legend(loc='upper right', fontsize = 6)
 			plt.savefig(str(plotdir)+'vthe_restr_'+EA_lenref[a]+'.pdf') ; plt.clf()
 #
 	return r, vkep

@@ -4,7 +4,7 @@
 # Programme designed to read in simulation data and generate synthetic PV diagram 
 #
 # Author: Benjamin MacFarlane
-# Date: 10/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -13,25 +13,16 @@
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-	# Unit conversion parameters
+sig_mult = 0		# Threshold sigma value over which edge of Keplerian profile is fitted to
 #
-pcAU = 206265.
-AUm = 1.496e11
-G = 6.67e-11
-Msol_kg = 1.998e30
+kep_fit = "TRUE"	# Choose whether ("TRUE") or not ("FALSE") to fit Keplerian profiles to PV data
 #
-	# Miscellaneous parameters
+fit_start = 0		# Index of radial bins that fitting starts at (if kep_fit == "TRUE")
+fit_stop = 25		# As above, but final index of fitting 
 #
-sig_mult = 0
+RL_fitcheck = "FALSE"	# Choose whether ("TRUE") or not ("FALSE") to compare masses computed to specfifc quadrants
 #
-kep_fit = "TRUE"
-#
-fit_start = 0
-fit_stop = 25
-#
-RL_fitcheck = "FALSE"
-#
-raw_fit = "FALSE"
+raw_fit = "FALSE"	# Choose whether ("TRUE") or not ("FALSE") to plot raw points to which Keplerian fit runs 
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -39,14 +30,10 @@ raw_fit = "FALSE"
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-import random
 import math
 import numpy as np
-import sys
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as cm
 import scipy
-from scipy.optimize import curve_fit
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -54,13 +41,14 @@ from scipy.optimize import curve_fit
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_timeref):
+def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_timeref, \
+   pcAU, AUm, G, Msol_kg):
 #
 	print "Position-Velocity diagram now being plotted"
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Set filenames to be read in for PV plotting/analysis, dependent on EA run being analysed #
+	# Set filenames to be read in for PV plotting/analysis, dependent on EA run being analysed
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -137,21 +125,12 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Define arrays to fill for comparison of PV fitted masses to simulation criteria masses #
+	# Loop over list of snapshots and read in data
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
+	# First, define arrays where PV diagram mass and associated error are stored
 #
-	pv_mass = []
-	pv_mass_err = []
-	pv_kepcrit = []
-	pv_pivcrit = []
-	pv_sigALMAcrit = []
-#
-#
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Loop over list of snapshots and read in data #
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-#
+	pv_mass = [] ; pv_mass_err = []
 #
 	for i in range(0, file_n):
 #
@@ -180,7 +159,7 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Calculate noise level based off in-situ PV diagram envelope emission #
+	# Calculate noise level based off in-situ PV diagram envelope emission
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -201,7 +180,7 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# LHS PV diagram analysis #
+	# LHS PV diagram analysis
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -274,13 +253,13 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 	# Fitting routine to PV-diagram, and determination of system mass using Keplerian edge fit
 #
-			coeffs1, fitcov1 = curve_fit(func, Lfit_r[fit_start:fit_stop], \
+			coeffs1, fitcov1 = scipy.optimize.curve_fit(func, Lfit_r[fit_start:fit_stop], \
 			   Lfit_y[fit_start:fit_stop], [1.], \
 			   sigma=Lfit_sig[fit_start:fit_stop])
 #
 			Lfit_r1 = np.array(Lfit_r)*AUm ; Lfit_y1 = np.array(Lfit_y)*1000.
 			Lfit_sig1 = np.array(Lfit_sig)*1000.
-			coeffs11, fitcov11 = curve_fit(func, Lfit_r1[fit_start:fit_stop], \
+			coeffs11, fitcov11 = scipy.optimize.curve_fit(func, Lfit_r1[fit_start:fit_stop], \
 			   Lfit_y1[fit_start:fit_stop], [1e3], \
 			   sigma=Lfit_sig1[fit_start:fit_stop])
 			y_fitted1 = func(Lfit_r[fit_start:fit_stop], coeffs1[0])
@@ -300,7 +279,7 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# RHS PV diagram analysis #
+	# RHS PV diagram analysis
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -360,14 +339,14 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 	# Fitting routine to quadrant data
 #
-			coeffs2, fitcov2 = curve_fit(func, Rfit_r[fit_start:fit_stop], \
+			coeffs2, fitcov2 = scipy.optimize.curve_fit(func, Rfit_r[fit_start:fit_stop], \
 			   Rfit_y[fit_start:fit_stop], [1.], \
 			   sigma=Rfit_sig[fit_start:fit_stop])
 			y_fitted2 = func(Rfit_r[fit_start:fit_stop], coeffs2[0])
 #
 			Rfit_r2 = np.array(Rfit_r)*AUm ; Rfit_y2 = np.array(Rfit_y)*1000.
 			Rfit_sig2 = np.array(Rfit_sig)*1000.
-			coeffs22, fitcov22 = curve_fit(func, Rfit_r2[fit_start:fit_stop], \
+			coeffs22, fitcov22 = scipy.optimize.curve_fit(func, Rfit_r2[fit_start:fit_stop], \
 			   Rfit_y2[fit_start:fit_stop], [1e3], \
 			   sigma=Rfit_sig2[fit_start:fit_stop])
 #
@@ -378,18 +357,12 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Outputs of PV diagram mass analysis #
+	# Outputs of PV diagram mass analysis
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
 			pv_mass.append( (M_sys1 + M_sys2) / 2. )
 			pv_mass_err.append( (M_err1 + M_err2) / 2. )
-#
-#
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Outputs of PV diagram mass analysis #
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-#
 #
 			if (RL_fitcheck == "TRUE"):
 				print "Mass of the system determined from LHS PV fit is: ", \
@@ -404,7 +377,7 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Plotting of PV diagram #
+	# Plotting of PV diagram
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -468,17 +441,11 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 				plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
 				   linestyle = 'dashed', color = 'k')
 #
-		cbar = plt.colorbar()
-		cbar.ax.set_ylabel('Log. Surface density,'+' (g '+(r'cm$^{-2}$')+')')
-		plt.xlabel('Radius (AU)')
-		plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
-		plt.xlim(-100,100)
-		plt.ylim(-10, 10)
-
-		plt.savefig(plot_filename[i])
-		plt.clf()
+		cbar = plt.colorbar() ; cbar.ax.set_ylabel('Log. Surface density,'+' (g '+(r'cm$^{-2}$')+')')
+		plt.xlabel('Radius (AU)') ; plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
+		plt.xlim(-100,100) ; plt.ylim(-10, 10)
+#
+		plt.savefig(plot_filename[i]) ; plt.clf()
 #	
 #
 	return pv_mass, raw_fit
-#
-#

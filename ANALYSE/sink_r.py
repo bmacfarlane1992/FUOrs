@@ -6,16 +6,13 @@
 # Script also provides equivalent simulation time for each snapshot under analysis.
 #
 # Author: Benjamin MacFarlane
-# Date: 16/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		# # # - - - VARIABLE DEFINITIONS - - - # # #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-#
-#
-pcAU = 206265.			# Conversion from parsec -> AU
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -33,11 +30,11 @@ import glob
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, ea_run, snaparr):
+def read(arch_dir, plotdir, ea_run, snaparr, pcAU):
 	print "Planet (sink) data being read"
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Read sink files, defining arrays to be filled for sink parameters #
+	# Read sink files, defining arrays to be filled for sink parameters
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -66,7 +63,7 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Extract sink radius/mass for snapshot selection #
+	# Extract sink radius/mass for snapshot selection
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -75,6 +72,7 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 	# For EA runs [0, 1]
 #
 	if (snaparr.ndim == 1):
+
 #
 		for i in range(len(snaparr)):
 			timearr.append( (snaparr[i] * 0.01) + float(min(time[0])) )
@@ -83,8 +81,9 @@ def read(arch_dir, plotdir, ea_run, snaparr):
 		pmass = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
 		pradius = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
 		ptime = [ [ 0 for j in xrange(len(timearr)) ] for i in xrange(len(time)) ]
-		for a in range(0,len(time)):							    # Loop over number of sinks
-			for i in range(0,len(timearr)):						    # Loop over time of snapshot under analysis
+#
+		for a in range(0, len(time)):							    # Loop over number of sinks
+			for i in range(0, len(timearr)):					    # Loop over time of snapshot under analysis
 				for t_s in range(0, len(time[a])):				    # Loopover timesnaps in sink file
 					if (round(timearr[i], 3) == round(time[a][t_s], 3) ):
 						pmass[a][i] = mass[a][t_s]

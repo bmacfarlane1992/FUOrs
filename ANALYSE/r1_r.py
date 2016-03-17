@@ -8,7 +8,7 @@
 #
 #
 # Author: Benjamin MacFarlane
-# Date: 16/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -39,7 +39,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-   # Read rdisc.1 file if original DS runs are being analysed #
+	# Read rdisc.1 file if original DS runs are being analysed
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -86,7 +86,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Carry out analysis of file in preparation for plotting #
+	# Carry out analysis of file in preparation for plotting
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -136,7 +136,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Plot rdisc.1 temporally evolved parameters
+	# Plot rdisc.1 temporally evolved parameters
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -229,7 +229,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-   # Write hasharr_app data to ensure mass_comp.py successfully traces accretion events #
+	# Write hasharr_app data to ensure mass_comp.py successfully traces accretion events
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -242,7 +242,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-   # Return null values for non-disc mass criterion values, if rdisc.1 file incomplete#
+	# Return null values for non-disc mass criterion values, if rdisc.1 file incomplete
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -252,7 +252,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-   # Read in rdisc.1 parameters specific to snapshots being analysed for mass and radius of disc 
+	# Read in rdisc.1 parameters specific to snapshots being analysed for mass and radius of disc 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #

@@ -4,7 +4,7 @@
 # Programme to plot comparison of masses in simulation and PV diagram analyses
 #
 # Author: Benjamin MacFarlane
-# Date: 02/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -13,7 +13,7 @@
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-print_term = "FALSE"
+print_term = "FALSE"	# Choose whether ("TRUE") or not ("FALSE") to output mass comparisons to terminal
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -21,15 +21,8 @@ print_term = "FALSE"
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-import os
-import random
-import math
 import numpy as np
-import sys
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as cm
-import scipy
-from scipy.optimize import curve_fit
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -42,22 +35,16 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 #
 	print "Mass comparisons of simulation and PV data now being plotted"
 #
-	# Define number of files to be read dependent on snaparr dimensions
-	# Set snaparr reference to 1D using snaparr_tmp dummy
-	# Also, restructure pmass array into pmass_tmp dummy, for consistency to file_n pointer.
-	# pmass_tmp stores sum of planetary mass to evaluate star + planet + disc mass properly
-#
+	# Read in masses independent of snaparr shape
+##
 	# For EA [0, 1] runs
 #
 	if (snaparr.ndim == 1):
 		file_n = len(snaparr)
-		snaparr_tmp = [0]*file_n
-		timearr_tmp = [0]*file_n
-		pmass_tmp = [0]*file_n
+		snaparr_tmp = [0]*file_n ; timearr_tmp = [0]*file_n ; pmass_tmp = [0]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
-			snaparr_tmp[fcount] = snaparr[i]
-			timearr_tmp[fcount] = timearr[i]
+			snaparr_tmp[fcount] = snaparr[i] ; timearr_tmp[fcount] = timearr[i]
 			for a in range(1, len(pmass)):
 				pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i]
 			fcount = fcount + 1
@@ -66,34 +53,28 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 #
 	elif (snaparr.ndim == 2):
 		file_n = len(snaparr)*len(snaparr[0])
-		snaparr_tmp = [0]*file_n
-		timearr_tmp = [0]*file_n
-		pmass_tmp = [0]*file_n
+		snaparr_tmp = [0]*file_n ; timearr_tmp = [0]*file_n ; pmass_tmp = [0]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
 			for j in range(0, len(snaparr[0])):
-				snaparr_tmp[fcount] = snaparr[i][j]
-				timearr_tmp[fcount] = timearr[i][j]
+				snaparr_tmp[fcount] = snaparr[i][j] ; timearr_tmp[fcount] = timearr[i][j]
 				for a in range(1, len(pmass)):
 					pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i][j]
 				fcount = fcount + 1
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Loop over snapshots, and compute masses for comparison #
+	# Loop over snapshots, and compute masses for comparison
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #
 #
-	m_sys_kep = [0] * file_n
-	m_sys_piv = [0] * file_n
-	m_sys_sigALMA = [0] * file_n
+	m_sys_kep = [0] * file_n ; m_sys_piv = [0] * file_n ; m_sys_sigALMA = [0] * file_n
 #
 	for i in range(0, file_n):
 #
 		m_sys_kep[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_kep[i]
 		m_sys_piv[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_piv[i]
 		m_sys_sigALMA[i] = m_s[i] + m_mri_d[i] + pmass_tmp[i] + m_d_sigALMA[i]
-#		m_sys_kep[i] = m_d_kep[i] ; m_sys_piv[i] = m_d_piv[i] ; m_sys_sigALMA[i] = m_d_sigALMA[i]
 #
 		if (print_term == "TRUE"):
 			print "for snaparr value: "+str(snaparr_tmp[i])
@@ -126,10 +107,10 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 #
 #
 	plt.figure(1)
+#
 	ax1 = plt.subplot(111)
 #
-	mass_stack = pv_mass + m_sys_kep + m_sys_piv + m_sys_sigALMA
-	max_mass = max(mass_stack)+0.1
+	mass_stack = pv_mass + m_sys_kep + m_sys_piv + m_sys_sigALMA ; max_mass = max(mass_stack)+0.1
 #
 	for i in range(0,len(t_e)):
 		plt.fill_between([t_s[i],t_e[i]], 0, max_mass, color='k', alpha = 0.5)
@@ -146,9 +127,6 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 	if (snaparr.ndim == 2):
 		plt.xlim(timearr_tmp[3]-0.25, timearr_tmp[8]+0.25)
 	plt.ylim(0, max_mass)
-	plt.xlabel('Time (kyr)' )
-	plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
-	plt.savefig(plotdir+'mass_comp.pdf')
-	plt.clf()
+	plt.xlabel('Time (kyr)' ) ; plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
 #
-#
+	plt.savefig(plotdir+'mass_comp.pdf') ; plt.clf()

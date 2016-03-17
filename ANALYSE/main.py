@@ -5,7 +5,7 @@
 # See script headers for more details on code I/O.
 #
 # Author: Benjamin MacFarlane
-# Date: 16/03/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -16,25 +16,25 @@
 #
 arch_dir = "/home/ben/Documents/WORK_PLANETS/PROJECTS/FUORS/"	# Location of ea/ directory with data set
 #
-v_K = ["90"]					# Keplerian velocity restriction on disc mass/radius
-inclin = ["0","90"]				# Inclination of disc being analysed
+v_K = ["90"]			# Keplerian velocity restriction on disc mass/radius
+inclin = ["0","90"]		# Inclination of disc being analysed
 #
-ea_run = [4]					# Select EA runs to process
+ea_run = [0, 3, 4]		# Select EA runs to process
 #
-r_limit = 150						# Limit of radial plots in pdisc analyses
-spline = "TRUE" 					# Choose whether or not to smooth surface density distributions
+r_limit = 150			# Limit of radial plots in pdisc analyses
+spline = "TRUE" 		# Choose whether or not to smooth surface density distributions
 #
-r_inspec = 50 						# Radius at which disc parameters inspected in rdisc
+r_inspec = 50 			# Radius at which disc parameters inspected in rdisc
 #
-pv = "TRUE"						# Choose whether ("TRUE") or not ("FALSE") to generate PV diagram
-mcomp_tmp = "TRUE"					# Choose whether ("TRUE") or not ("FALSE") to generate mass comparison
-#							# of simulation vs. PV diagram analysis system masses
+pv = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to generate PV diagram
+mcomp_tmp = "TRUE"		# Choose whether ("TRUE") or not ("FALSE") to generate mass comparison
+#				# of simulation vs. PV diagram analysis system masses
 #
 EA_timeref = ["BEFORE","DURING","AFTER"]		# Define names of EA snapshots for EA length reference	
 EA_lenref = ["SHORT","MEDIUM","LONG"]			# and time reference to EA outburst event
 #
 d = {}
-snap0 = 'snap0' ; snap1 = 'snap1' ; snap2 = 'snap2'	# snaparr formatted as [before,during,after]  for [short,medium,long] 
+snap0 = 'snap0' ; snap1 = 'snap1' ; snap2 = 'snap2'			# snaparr formatted as [before,during,after]  for [short,medium,long] 
 snap3 = 'snap3' ; snap4 = 'snap4' ; snap5 = 'snap5' ; snap6 = 'snap6'	# accretion events. Must use dictionary to ensure that snaparr
 #									#  can be manipulated into snaparr{i,j} array
 d[snap0] = [131, 331]						
@@ -54,18 +54,25 @@ d[snap6] = [[185,200,215],[840,870,900],[1560,1600,1640]]
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+		# # # - - - CONSTANTS AND CONVERSIONS - - - # # #
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+#
+#
+pcAU = 206265.		# Conversion from parsec -> AU
+AUm = 1.496e11		# Conversion from AU -> m
+G = 6.67e-11		# Gravitational constant
+Msol_kg = 1.998e30	# Conversion from Solar masses -> kg 
+#
+#
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		# # # - - - MODULE IMPORTS - - - # # #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-	# Import python library modules
-#
-import os
+import os			# Standard Python modules 
 import numpy as np
 #
-	# Import local modules
-#
-import r1_r
+import r1_r			# Local modules
 import sink_r
 import pdisc_r
 import rdisc_r
@@ -79,7 +86,7 @@ import mass_comp
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# For full analysis, loop over accretion tags as defined in array of L23 (ea_run) #
+	# For full analysis, loop over accretion tags as defined in array of L23 (ea_run)
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
@@ -118,7 +125,7 @@ for i in range(0, len(ea_run)):
 	# DE05.sink file(s) read (Planet sink data vs. radius vs. time)
 #
 			pmass, pradius, timearr = \
-			   sink_r.read(arch_dir_tmp, plotdir, ea_run[i], snaparr)
+			   sink_r.read(arch_dir_tmp, plotdir, ea_run[i], snaparr, pcAU)
 #
 	# pdisc read (Disc parameters vs. radius for defined time)
 #
@@ -136,7 +143,8 @@ for i in range(0, len(ea_run)):
 	# Position-Velocity diagram plot
 #
 				pv_mass, raw_fit = pv_diag.pv(arch_dir_tmp, plotdir, ea_run[i], \
-				   snaparr, v_K[k], inclin[j], r, vkep, EA_lenref, EA_timeref)	
+				   snaparr, v_K[k], inclin[j], r, vkep, EA_lenref, EA_timeref, \
+				   pcAU, AUm, G, Msol_kg)	
 #
 	# Mass comparison of simulation to PV data
 #
@@ -152,7 +160,7 @@ for i in range(0, len(ea_run)):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-		# Remove garbage from analysis directory and end program #
+	# Remove garbage from analysis directory and end program
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
