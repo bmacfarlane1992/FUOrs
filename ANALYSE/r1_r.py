@@ -8,7 +8,7 @@
 #
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 07/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -262,7 +262,8 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 	# Define arrays to fill, read file and store data in relevant array
 #
-	m_s = [] ; m_mri_d = [] ; m_d_kep = [] ; m_d_piv = [] ; m_d_sigALMA = [] ; r_d_kep = []
+	m_s = [] ; m_mri_d = [] ; m_d_kep = [] ; m_d_piv = [] ; m_d_sigALMA = []
+	r_d_kep = [] ; r_d_sigALMA = []
 #
 	f = open(filename, 'r')
 	for line in f:
@@ -270,8 +271,9 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 		columns = line.split()
 		m_s.append(float(columns[1])) ; m_mri_d.append(float(columns[2])) 
 		r_d_kep.append(float(columns[3])) ; m_d_kep.append(float(columns[4]))
-		m_d_piv.append(float(columns[6])) ; m_d_sigALMA.append(float(columns[12]))
+		m_d_piv.append(float(columns[6])) ; r_d_sigALMA.append(float(columns[11]))
+		m_d_sigALMA.append(float(columns[12]))
 	f.close()
 	
 #	
-	return hasharr_app, n_accr, r_d_kep, m_s, m_mri_d, m_d_kep, m_d_piv, m_d_sigALMA
+	return hasharr_app, n_accr, r_d_kep, r_d_sigALMA, m_s, m_mri_d, m_d_kep, m_d_piv, m_d_sigALMA

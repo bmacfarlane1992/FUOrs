@@ -6,7 +6,7 @@
 # Whitworth & Hubber (2012) work.
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 07/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -17,7 +17,7 @@
 #
 	# !!! DO TIME CHECK PRIOR TO ENTERING VALUES OF [tag]_s_[time] INDICES !!!
 #
-time_check = "FALSE"			# Choose whether ("TRUE") or not ("FALSE") to output times of accretion
+time_check = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to output times of accretion
 powerfit_check = "FALSE"		# Choose whether ("TRUE") or not ("FALSE") to fitted power indices to Sig and T profiles
 #
 col_arr = ["b", "g", "r", "c", "m", "k"]
@@ -26,7 +26,7 @@ def func(x, a, b):			# Linear function used to fit power indices to log-log Sig/
   return a*x + b
 #
 r_start = 1				# Radial index to start log plots (must be > 1)
-r_fit = 5				# Radial point after which power indices fit to data as described above
+r_fit_S = 10				# Radial point after which power indices fit to data as described above
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -47,7 +47,7 @@ from scipy import interpolate
 #
 #
 def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
-   pradius, hasharr_app, n_accr, r_limit, spline, r_d_kep, timearr, v_K):
+   pradius, hasharr_app, n_accr, r_limit, spline, r_d_kep, r_d_sigALMA, timearr, v_K):
 #
 	print("pdisc files being read")
 #
@@ -154,7 +154,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			   color = col_arr[i])
 		plt.xlabel("Disc radius (AU)", fontsize = 8) 
 		plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
-		plt.ylim(ax1.get_ylim()[0], 20)
+		plt.ylim(10, 20)
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
 		ax2 = plt.subplot(222)
@@ -178,19 +178,27 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 		plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU'+'.pdf') ; plt.clf()
 #
-# Plot surface density vs. radius for singular accretion event
-# First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
+# Plot surface density vs. radius for non-ea runs with fit to log-log data to find power index, p
 #
+	# Set y_fitted array sizes dependent on disc radial extents using proxy of ALMA sig. criterion
+# 
 		coeffs = [0]*len(snaparr_tmp) ; matcov = [0]*len(snaparr_tmp)
-		y_fitted = [[0]*len(sig[0,r_fit:r_limit] ) ]*len(snaparr_tmp)
+		y_fitted = [[] for i in range(len(snaparr_tmp))]
+#
+		for i in range(0, len(snaparr_tmp)):
+			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
+			for j in range(0, len(sig[snaparr_tmp[i],r_fit_S:r_fit_E] ) ):
+				y_fitted[i].append(0)
 #
 		plt.figure(1)
 		ax1 = plt.subplot(111)
-		for i in range(0, len(snaparr_tmp)):
 #
-			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
-			   np.log10(sig[snaparr_tmp[i],r_fit:r_limit]), [1, 1])
-			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
+		for i in range(0, len(snaparr_tmp)):
+			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
+#
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
+			   np.log10(sig[snaparr_tmp[i],r_fit_S:r_fit_E]), [1, 1])
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
 			    coeffs[i][0], coeffs[i][1])
 #
 			if (spline == "TRUE"):
@@ -200,27 +208,27 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				   sig[snaparr_tmp[i],r_start:r_limit])
 				signew = interpolate.splev(rnew, tck, der = 0)
 #
-				line1 = plt.plot(np.log10(rnew), np.log10(signew), \
+				line1 = plt.plot(rnew, np.log10(signew), \
 				   color = col_arr[i])
 #
 			elif (spline == "FALSE"):
-				line1 = plt.plot(np.log10(r[snaparr_tmp[i],r_start:r_limit]), \
+				line1 = plt.plot(r[snaparr_tmp[i],r_start:r_limit], \
 				   np.log10(sig[snaparr_tmp[i],r_start:r_limit]), \
 			   	color = col_arr[i])
 #
-			line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), y_fitted[i], \
+			line2 = plt.plot(r[snaparr_tmp[i],r_fit_S:r_fit_E], y_fitted[i], \
 			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs[i][0])), 4)) )
+			   label = str(round(np.log10(abs(coeffs[i][0])), 4)) )
 #
-		plt.xlabel("Disc radius (AU)", fontsize = 8) 
+		plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 		plt.ylabel("log Surface density", fontsize = 8, labelpad=0.5)
 		plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-		plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", fontsize=6)
+		plt.legend(loc='upper right', title = "p fitted values", fontsize=6)
 #
 		plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU.pdf') ; plt.clf()	
 #
-# Print power law fits to surface density profiles
+	# Print power law fits to surface density profiles
 #
 		if (powerfit_check == "TRUE"):
 			print "\n Surface density power law fits \n"
@@ -229,19 +237,26 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				   +str(ea_run)+" is: ",  \
 				   str( round( coeffs[i][0] , 4 ) )+" \n"
 #
-# Plot temperature vs. radius for singular accretion event
-# First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
+# Plot temperature vs. radius for non-ea runs with fit to log-log data to find power index, q
 #
+	# Set y_fitted array sizes dependent on disc radial extents using proxy of ALMA sig. criterion
+# 
 		coeffs = [0]*len(snaparr_tmp) ; matcov = [0]*len(snaparr_tmp)
-		y_fitted = [[0]*len(T[0,r_fit:r_limit] ) ]*len(snaparr_tmp)
+		y_fitted = [[] for i in range(len(snaparr_tmp))]
+#
+		for i in range(0, len(snaparr_tmp)):
+			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
+			for j in range(0, len(T[snaparr_tmp[i],r_fit_S:r_fit_E] ) ):
+				y_fitted[i].append(0)
 #
 		plt.figure(1)
 		ax1 = plt.subplot(111)
 		for i in range(0, len(snaparr_tmp)):
+			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
 #
-			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
-			   np.log10(T[snaparr_tmp[i],r_fit:r_limit]), [1, 1])
-			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), \
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
+			   np.log10(T[snaparr_tmp[i],r_fit_S:r_fit_E]), [1, 1])
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
 			   coeffs[i][0], coeffs[i][1])
 #
 			if (spline == "TRUE"):
@@ -251,26 +266,26 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				   T[snaparr_tmp[i],r_start:r_limit])
 				Tnew = interpolate.splev(rnew, tck, der = 0)
 #
-				line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
+				line1 = plt.plot(rnew, np.log10(Tnew), \
 				   color = col_arr[i])
 #
 			elif (spline == "FALSE"):
-				line1 = plt.plot(np.log10(r[snaparr_tmp[i],r_start:r_limit]), \
+				line1 = plt.plot(r[snaparr_tmp[i],r_start:r_limit], \
 				   np.log10(T[snaparr_tmp[i],r_start:r_limit]), color = col_arr[i])
 #
-			line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit:r_limit]), y_fitted[i], \
+			line2 = plt.plot(r[snaparr_tmp[i],r_fit_S:r_fit_E], y_fitted[i], \
 			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = "-"+str(round(np.log10(abs(coeffs[i][0])), 4)) )
+			   label = str(round(np.log10(abs(coeffs[i][0])), 4)) )
 #
-		plt.xlabel("Disc radius (AU)", fontsize = 8) 
+		plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 		plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
 		plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-		plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", fontsize=6)
+		plt.legend(loc='upper right', title = "q fitted values", fontsize=6)
 #
 		plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU.pdf') ; plt.clf()	
 #
-# Print power law fits to Temperature profiles
+	# Print power law fits to Temperature profiles
 #
 		if (powerfit_check == "TRUE"):
 			print "\n Temperature power law fits \n"
@@ -306,7 +321,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 						ax1.plot(pradius[a][idash], \
 						   vkep[snaparr_tmp[idash],int(pradius[a][idash])], \
 						    col_arr[idash]+'o', markersize=10.0)
-		plt.xlabel("Disc radius (AU)", fontsize = 8)
+		plt.xlabel("Disc Radius (AU)", fontsize = 8)
 		plt.ylabel(''+(r'v$_{\phi}$')+' (km'+(r's$^{-1}$')+')', fontsize = 8, labelpad=0.5)
 		plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1]/2.) ; plt.xlim(0, r_limit)
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
@@ -400,8 +415,8 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			print "\n"
 			exit()
 #
-	# Invoke a switch statement to loop over pdisc analysis of ea [2, 3, 4, 5, 6] runs
-	# with focus on (a) single accretion event and (b) focus on snapshot relative to accretion
+	# Invoke a switch statement to loop over pdisc analysis of runs with ea 
+	# to focus on (a) single accretion event and (b) focus on snapshot relative to accretion
 	# state for different events
 #		
 		for lendur in range(0, 2):
@@ -429,7 +444,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 					   Q[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
 				plt.xlabel("Disc radius (AU)", fontsize = 8) 
 				plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
-				plt.ylim(ax1.get_ylim()[0], 20)
+				plt.ylim(10, 20)
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
 				ax2 = plt.subplot(222)
@@ -466,20 +481,28 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU_'+EA_lenref[i]+'.pdf')
 				plt.clf()
 #
-# Plot surface density vs. radius for comparative accretion reference times. 
-# First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
+# Plot surface density vs. radius for ea runs with fit to log-log data to find power index, p
 #
 				coeffs = [0]*len(snaparr_tmp[0]) ; matcov = [0]*len(snaparr_tmp[0])
-				y_fitted = [[0]*len(sig[snaparr_tmp[0][0],r_fit:r_limit] ) ]*len(snaparr_tmp[0])
+				y_fitted = [[] for j in range(len(snaparr_tmp[0]))]
+#
+	# Set y_fitted array sizes dependent on disc radial extents using proxy of ALMA sig. criterion
+# 
+				for j in range(0, len(snaparr_tmp[0])):
+					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
+#
+					for k in range(0, len(sig[snaparr_tmp[i][j],r_fit_S:r_fit_E]) ):
+						y_fitted[j].append(0)
 #
 				plt.figure(1)
-#
 				ax1 = plt.subplot(111)
 #
 				for j in range(0, len(snaparr_tmp[0])):
-					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
-					   np.log10(sig[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
-					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
+#
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
+					   np.log10(sig[snaparr_tmp[i][j],r_fit_S:r_fit_E]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
 					   coeffs[j][0], coeffs[j][1])
 #
 					if (spline == "TRUE"):
@@ -489,29 +512,29 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 						   sig[snaparr_tmp[i][j],r_start:r_limit])
 						signew = interpolate.splev(rnew, tck, der = 0)
 #
-						line1 = plt.plot(np.log10(rnew), np.log10(signew), \
+						line1 = plt.plot(rnew, np.log10(signew), \
 						   color = col_arr[j])
 #
 					elif (spline == "FALSE"):
-						line1 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_start:r_limit]), \
+						line1 = plt.plot(r[snaparr_tmp[i][j],r_start:r_limit], \
 						   np.log10(sig[snaparr_tmp[i][j],r_start:r_limit]), \
 					   	   color = col_arr[j])
 #
-					line2 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), y_fitted[j], 
+					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S:r_fit_E], y_fitted[j], 
 					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-					   label = "-"+str(round(np.log10(abs(coeffs[j][0])), 4)) )
+					   label = str(round(np.log10(abs(coeffs[j][0])), 4)) )
 #
-				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 				plt.ylabel("log Surface Density", fontsize = 8, labelpad=0.5)
 				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-				plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
+				plt.legend(loc='upper right', title = "p fitted values", \
 				   fontsize=6)
 #	
 				plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
 				plt.clf()	
 #
-# Print power law fits to surface density profiles
+	# Print power law fits to surface density profiles
 #
 				if (powerfit_check == "TRUE"):
 					print "\n Surface density power law fits \n"
@@ -520,20 +543,27 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 						   +" snapshot of "+str(ea_run)+" is: ",  \
 						   str( round( coeffs[j][0] , 4 ) )+" \n"
 #
-# Plot temperature vs. radius for comparative accretion reference times. 
-# First, fit double linear fit up to, and over set radial value (r_fit, L30) then plot
+# Plot temperature vs. radius for ea runs with fit to log-log data to find power index, q
 #
-				coeffs = [0]*len(snaparr_tmp[0]) ;  matcov = [0]*len(snaparr_tmp[0])
-				y_fitted = [[0]*len(T[snaparr_tmp[0][0],r_fit:r_limit] ) ]*len(snaparr_tmp[0])
+				coeffs = [0]*len(snaparr_tmp[0]) ; matcov = [0]*len(snaparr_tmp[0])
+				y_fitted = [[] for j in range(len(snaparr_tmp[0]))]
+#
+	# Set y_fitted array sizes dependent on disc radial extents using proxy of ALMA sig. criterion
+# 
+				for j in range(0, len(snaparr_tmp[0])):
+					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
+					for k in range(0, len(T[snaparr_tmp[i][j],r_fit_S:r_fit_E]) ):
+						y_fitted[j].append(0)
 #
 				plt.figure(1)
-#
 				ax1 = plt.subplot(111)
 #
 				for j in range(0, len(snaparr_tmp[0])):
-					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
-					   np.log10(T[snaparr_tmp[i][j],r_fit:r_limit]), [1, 1])
-					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit:r_limit]), \
+					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
+#
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
+					   np.log10(T[snaparr_tmp[i][j],r_fit_S:r_fit_E]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
 					   coeffs[j][0], coeffs[j][1])
 #
 					if (spline == "TRUE"):
@@ -543,29 +573,29 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 						   T[snaparr_tmp[i][j],r_start:r_limit])
 						Tnew = interpolate.splev(rnew, tck, der = 0)
 #
-						line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
+						line1 = plt.plot(rnew, np.log10(Tnew), \
 						   color = col_arr[j])
 #
 					elif (spline == "FALSE"):
-						line1 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_start:r_limit]), \
+						line1 = plt.plot(r[snaparr_tmp[i][j],r_start:r_limit], \
 						   np.log10(T[snaparr_tmp[i][j],r_start:r_limit]), \
 					   	   color = col_arr[j])
 #
-					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit:r_limit], y_fitted[j], 
+					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S:r_fit_E], y_fitted[j], 
 					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-					   label = "-"+str(round(np.log10(abs(coeffs[j][0])), 4)) )
+					   label = str(round(np.log10(abs(coeffs[j][0])), 4)) )
 #
-				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 				plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
 				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-				plt.legend(loc='upper right', title = (r'${\alpha}$')+" values of fit", \
+				plt.legend(loc='upper right', title = "q fitted values", \
 				   fontsize=6)
 #
 				plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
 				plt.clf()	
 #
-# Print power law fits to surface density profiles
+	# Print power law fits to surface density profiles
 #
 				if (powerfit_check == "TRUE"):
 					print "\n Temperature power law fits \n"

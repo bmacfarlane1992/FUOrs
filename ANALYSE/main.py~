@@ -31,7 +31,7 @@ mcomp_tmp = "TRUE"		# Choose whether ("TRUE") or not ("FALSE") to generate mass 
 #				# of simulation vs. PV diagram analysis system masses
 #
 EA_timeref = ["BEFORE","DURING_A","DURING_B","AFTER"]		# Define names of EA snapshots for EA length reference	
-EA_lenref = ["SHORT","MEDIUM","LONG"]				# and time reference to EA outburst event
+EA_lenref = ["SHORT","MEDIUM","LONG"]			# and time reference to EA outburst event
 #
 d = {}
 snap0 = 'snap0' ; snap1 = 'snap1' ; snap3 = 'snap3' ; snap4 = 'snap4'	# snaparr formatted as [before,during,after]  for [short,medium,long] 

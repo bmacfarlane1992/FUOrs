@@ -5,7 +5,7 @@
 # See script headers for more details on code I/O.
 #
 # Author: Benjamin MacFarlane
-# Date: 07/04/2016
+# Date: 17/03/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -16,10 +16,10 @@
 #
 arch_dir = "/home/ben/Documents/WORK_PLANETS/PROJECTS/FUORS/"	# Location of ea/ directory with data set
 #
-v_K = ["90"]			# Keplerian velocity percentage restriction on disc mass/radius
+v_K = ["90"]			# Keplerian velocity restriction on disc mass/radius
 inclin = ["0","90"]		# Inclination of disc being analysed
 #
-ea_run = [4]		# Select EA runs to process
+ea_run = [0, 1, 3, 4]		# Select EA runs to process
 #
 r_limit = 150			# Limit of radial plots in pdisc analyses
 spline = "TRUE" 		# Choose whether or not to smooth surface density distributions
@@ -30,18 +30,27 @@ pv = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to generate PV diagram
 mcomp_tmp = "TRUE"		# Choose whether ("TRUE") or not ("FALSE") to generate mass comparison
 #				# of simulation vs. PV diagram analysis system masses
 #
-EA_timeref = ["BEFORE","DURING_A","DURING_B","AFTER"]		# Define names of EA snapshots for EA length reference	
-EA_lenref = ["SHORT","MEDIUM","LONG"]				# and time reference to EA outburst event
+EA_timeref = ["BEFORE","DURING","AFTER"]		# Define names of EA snapshots for EA length reference	
+EA_lenref = ["SHORT","MEDIUM","LONG"]			# and time reference to EA outburst event
 #
 d = {}
-snap0 = 'snap0' ; snap1 = 'snap1' ; snap3 = 'snap3' ; snap4 = 'snap4'	# snaparr formatted as [before,during,after]  for [short,medium,long] 
-#									# accretion events. Uses dictionary to ensure that snaparr can be 										# manipulated into snaparr{i,j} array. DE05 incdices also listed in ###
-d[snap0] = [131, 331]	### [200, 400] ###						
-d[snap1] = [600, 1100, 2100] ### [669, 1169, 2169] ###
-d[snap3] = [[100,150,200,250],[400,450,550,600],[1050,1150,1350,1450]]
-	### [[00169,00219,00269,00319],[00469,00519,00619,00669],[01119,1219,01419,01519]] ###
-d[snap4] = [[200,209,212,220],[860,875,880,900],[1525,1585,1595,1625]]
-	### [[00269,00278,00281,00289],[00929,00944,00949,00969],[01594,01654,01664,01694]] ###
+snap0 = 'snap0' ; snap1 = 'snap1' ; snap2 = 'snap2'			# snaparr formatted as [before,during,after]  for [short,medium,long] 
+snap3 = 'snap3' ; snap4 = 'snap4' ; snap5 = 'snap5' ; snap6 = 'snap6'	# accretion events. Must use dictionary to ensure that snaparr
+#									# can be manipulated into snaparr{i,j} array. DE05 incdices also listed
+d[snap0] = [131, 331]						
+#		DE05 ext for ea 0: [200, 400] 		# Respective DE05 indices also listed
+d[snap1] = [600, 1100, 2100]
+#		DE05 ext for ea 1: [669, 1169, 2169]
+d[snap2] = [[150,190,230],[800,840,880],[1500,1545,1590]]
+#		DE05 ext for ea 2: [[00219,00259,00299],[00869,00909,00949],[01569,01614,01659]]
+d[snap3] = [[100,175,250],[400,500,600],[1050,1250,1450]]
+#		DE05 ext for ea 3: [[00169,00244,00319],[00469,00569,00669],[01119,01319,01519]] 
+d[snap4] = [[200,210,220],[860,880,900],[1525,1575,1625]]
+#		DE05 ext for ea 4: [[00269,00279,00289],[00929,00949,00969],[01594,01644,01694]]
+d[snap5] = [[170,190,210],[740,760,780],[1360,1390,1420]]
+#		DE05 ext for ea 5: [[00239,00259,00279],[00809,00829,00849],[01429,01459,01489]] 
+d[snap6] = [[185,200,215],[840,870,900],[1560,1600,1640]]
+#		DE05 ext for ea 6: [[00254,00269,00284],[00909,00939,00969],[01629,01669,01709]]
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
