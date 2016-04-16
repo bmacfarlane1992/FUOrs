@@ -6,7 +6,7 @@
 # Whitworth & Hubber (2012) work.
 #
 # Author: Benjamin MacFarlane
-# Date: 07/04/2016
+# Date: 16/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -17,16 +17,25 @@
 #
 	# !!! DO TIME CHECK PRIOR TO ENTERING VALUES OF [tag]_s_[time] INDICES !!!
 #
-time_check = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to output times of accretion
+time_check = "FALSE"			# Choose whether ("TRUE") or not ("FALSE") to output times of accretion
 powerfit_check = "FALSE"		# Choose whether ("TRUE") or not ("FALSE") to fitted power indices to Sig and T profiles
 #
 col_arr = ["b", "g", "r", "c", "m", "k"]
 #
+#
 def func(x, a, b):			# Linear function used to fit power indices to log-log Sig/T vs. radius distributions
   return a*x + b
 #
-r_start = 1				# Radial index to start log plots (must be > 1)
-r_fit_S = 10				# Radial point after which power indices fit to data as described above
+smooth = 3				# Set level of smoothing that SD and  distributions undergo (1 = original data)
+loglin = "TRUE"				# Choose either log-linear ("TRUE") or log-log ("FALSE") distributions of SD and T
+#
+r_start = 1				# Radial index to start plots (must be > 1 for loglin == "FALSE")
+#
+d = {}					# Radial value (AU) to start log-log fits for each snaparr (see main.py for formatting)
+r_fitS_0 = 'r_fitS_0' ; r_fitS_1 = 'r_fitS_1' ; r_fitS_3 = 'r_fitS_3' ; r_fitS_4 = 'r_fitS_4'	# using dictionaries
+d[r_fitS_0] = [5, 20] ; d[r_fitS_1] = [10, 10, 10]
+d[r_fitS_3] = [[10,10,10,10],[10,10,10,10],[10,10,10,10]]
+d[r_fitS_4] = [[10,10,10,10],[10,10,10,10],[10,10,10,10]]
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -47,7 +56,7 @@ from scipy import interpolate
 #
 #
 def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
-   pradius, hasharr_app, n_accr, r_limit, spline, r_d_kep, r_d_sigALMA, timearr, v_K):
+   pradius, hasharr_app, n_accr, r_limit, r_d_kep, r_d_sigALMA, timearr, v_K, inclin):
 #
 	print("pdisc files being read")
 #
@@ -123,9 +132,14 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			   + float(columns[12])**2))
 		f.close()
 #
+	# Set run specific fit start locations as per dictionary definitions
+#
+		r_fit_S = d['r_fitS_'+str(ea_run)] ; r_fit_S = np.array(r_fit_S)
+#
 	time = np.array(time) ; r = np.array(r) ; Q = np.array(Q) ; T = np.array(T) ; sig = np.array(sig)
 	rInM = np.array(rInM) ; M_s = np.array(M_s) ; M_d = np.array(M_d) ; v_r = np.array(v_r)
 	v_the = np.array(v_the) ; v_z = np.array(v_z) ; vkep = np.array(vkep) ; v_mod = np.array(v_mod)
+#
 #
 #
 	# Plot the disc parameters before, during and after the accretion for defined radial value
@@ -154,7 +168,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			   color = col_arr[i])
 		plt.xlabel("Disc radius (AU)", fontsize = 8) 
 		plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
-		plt.ylim(10, 20)
+		plt.ylim(0, 4)
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
 		ax2 = plt.subplot(222)
@@ -187,7 +201,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 		for i in range(0, len(snaparr_tmp)):
 			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
-			for j in range(0, len(sig[snaparr_tmp[i],r_fit_S:r_fit_E] ) ):
+			for j in range(0, len(sig[snaparr_tmp[i],r_fit_S[i]:r_fit_E] ) ):
 				y_fitted[i].append(0)
 #
 		plt.figure(1)
@@ -196,35 +210,42 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 		for i in range(0, len(snaparr_tmp)):
 			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
 #
-			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
-			   np.log10(sig[snaparr_tmp[i],r_fit_S:r_fit_E]), [1, 1])
-			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
+			   np.log10(sig[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), [1, 1])
+#
+	# Write exponents for SD
+#
+			if( (v_K == "90") and (inclin == "0")):
+				f = open(arch_dir+'../../../SD_exps.dat','a')
+				f.write(str(ea_run)+' '+str(snaparr[i])+' '+str( round(coeffs[i][0], 2) )+'\n' )
+				f.close()
+#
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
 			    coeffs[i][0], coeffs[i][1])
 #
-			if (spline == "TRUE"):
-				rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+			rnew = np.arange(r_start,r_limit,r_limit/(r_limit/smooth))
 #
-				tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
-				   sig[snaparr_tmp[i],r_start:r_limit])
-				signew = interpolate.splev(rnew, tck, der = 0)
+			tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
+			   sig[snaparr_tmp[i],r_start:r_limit])
+			signew = interpolate.splev(rnew, tck, der = 0)
 #
-				line1 = plt.plot(rnew, np.log10(signew), \
+			if (loglin == "TRUE"):
+				line1 = plt.plot(rnew, np.log10(signew), color = col_arr[i])
+				line2 = plt.plot(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E], y_fitted[i], \
+				   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
+				   label = str(round(coeffs[i][0], 2)) )
+			elif (loglin == "FALSE"):
+				line1 = plt.plot(np.log10(rnew), np.log10(signew), \
 				   color = col_arr[i])
-#
-			elif (spline == "FALSE"):
-				line1 = plt.plot(r[snaparr_tmp[i],r_start:r_limit], \
-				   np.log10(sig[snaparr_tmp[i],r_start:r_limit]), \
-			   	color = col_arr[i])
-#
-			line2 = plt.plot(r[snaparr_tmp[i],r_fit_S:r_fit_E], y_fitted[i], \
-			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = str(round(np.log10(abs(coeffs[i][0])), 4)) )
+				line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
+				   y_fitted[i], color = col_arr[i], linewidth = 2, \
+				   linestyle = 'dashed', label = str(round(coeffs[i][0], 2)) )
 #
 		plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 		plt.ylabel("log Surface density", fontsize = 8, labelpad=0.5)
 		plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-		plt.legend(loc='upper right', title = "p fitted values", fontsize=6)
+		plt.legend(loc='upper right', title = "p fitted values", fontsize=10)
 #
 		plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU.pdf') ; plt.clf()	
 #
@@ -235,7 +256,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			for i in range(0, len(snaparr_tmp)):
 				print "Power index for the "+snaparr_tmp[i]+" snapshot of " \
 				   +str(ea_run)+" is: ",  \
-				   str( round( coeffs[i][0] , 4 ) )+" \n"
+				   str( round( coeffs[i][0] , 2 ) )+" \n"
 #
 # Plot temperature vs. radius for non-ea runs with fit to log-log data to find power index, q
 #
@@ -246,7 +267,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 		for i in range(0, len(snaparr_tmp)):
 			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
-			for j in range(0, len(T[snaparr_tmp[i],r_fit_S:r_fit_E] ) ):
+			for j in range(0, len(T[snaparr_tmp[i],r_fit_S[i]:r_fit_E] ) ):
 				y_fitted[i].append(0)
 #
 		plt.figure(1)
@@ -254,34 +275,42 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 		for i in range(0, len(snaparr_tmp)):
 			r_fit_E = int(r_d_sigALMA[snaparr_tmp[i]])			
 #
-			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
-			   np.log10(T[snaparr_tmp[i],r_fit_S:r_fit_E]), [1, 1])
-			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S:r_fit_E]), \
+			coeffs[i], matcov[i] = curve_fit(func, np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
+			   np.log10(T[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), [1, 1])
+			y_fitted[i] = func(np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
 			   coeffs[i][0], coeffs[i][1])
 #
-			if (spline == "TRUE"):
-				rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+	# Write exponents for T
 #
-				tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
-				   T[snaparr_tmp[i],r_start:r_limit])
-				Tnew = interpolate.splev(rnew, tck, der = 0)
+			if( (v_K == "90") and (inclin == "0")):
+				f = open(arch_dir+'../../../T_exps.dat','a')
+				f.write(str(ea_run)+' '+str(snaparr[i])+' '+str( round(coeffs[i][0], 2) )+'\n' )
+				f.close()
 #
-				line1 = plt.plot(rnew, np.log10(Tnew), \
+			rnew = np.arange(r_start,r_limit,r_limit/(r_limit/smooth))
+#
+			tck = interpolate.splrep(r[snaparr_tmp[i],r_start:r_limit], \
+			   T[snaparr_tmp[i],r_start:r_limit])
+			Tnew = interpolate.splev(rnew, tck, der = 0)
+#
+			if (loglin == "TRUE"):
+				line1 = plt.plot(rnew, np.log10(Tnew), color = col_arr[i])
+				line2 = plt.plot(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E], y_fitted[i], \
+				   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
+				   label = str(round(coeffs[i][0], 2)) )
+#
+			elif (loglin == "FALSE"):
+				line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
 				   color = col_arr[i])
-#
-			elif (spline == "FALSE"):
-				line1 = plt.plot(r[snaparr_tmp[i],r_start:r_limit], \
-				   np.log10(T[snaparr_tmp[i],r_start:r_limit]), color = col_arr[i])
-#
-			line2 = plt.plot(r[snaparr_tmp[i],r_fit_S:r_fit_E], y_fitted[i], \
-			   color = col_arr[i], linewidth = 2, linestyle = 'dashed', \
-			   label = str(round(np.log10(abs(coeffs[i][0])), 4)) )
+				line2 = plt.plot(np.log10(r[snaparr_tmp[i],r_fit_S[i]:r_fit_E]), \
+				   y_fitted[i], color = col_arr[i], linewidth = 2, \
+				   linestyle = 'dashed', label = str(round(coeffs[i][0], 2)) )
 #
 		plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 		plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
 		plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 		plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
-		plt.legend(loc='upper right', title = "q fitted values", fontsize=6)
+		plt.legend(loc='upper right', title = "q fitted values", fontsize=10)
 #
 		plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU.pdf') ; plt.clf()	
 #
@@ -292,7 +321,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			for i in range(0, len(snaparr_tmp)):
 				print "Power index for the "+snaparr_tmp[i]+" snapshot of "+ \
 				   str(ea_run)+" is: ",  \
-				   str(round( coeffs[i][0], 4 ) )+" \n"
+				   str(round( coeffs[i][0], 2 ) )+" \n"
 #
 # Plot azimuthal velocity vs. radius for singular accretion event. Compare data of before/during/
 # after event with analytic calculation of Keplerian velocity for snapshot
@@ -385,7 +414,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				   color=col_arr[5], alpha = 0.5)
 			plt.xlabel("Disc radius (AU)") ; plt.ylabel("|v|"+' (km'+(r's$^{-1}$')+')')
 			plt.xlim(0,r_limit) ; plt.ylim(0., max(vkep[snaparr_tmp[a],1:r_limit]))
-			plt.title(str(round(timearr[a], 2))+") kyr snapshot")
+			plt.title(str(round(timearr[a], 3))+") kyr snapshot")
 #
 		plt.legend(loc='upper right', fontsize = 6)
 		plt.savefig(str(plotdir)+'vthe_restr.pdf') ; plt.clf()
@@ -418,19 +447,31 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 	# Invoke a switch statement to loop over pdisc analysis of runs with ea 
 	# to focus on (a) single accretion event and (b) focus on snapshot relative to accretion
 	# state for different events
-#		
+#	
 		for lendur in range(0, 2):
-			title_point = [""]*3
-			leg_point = [""]*3
-			if (lendur == 0):
-				title_point = EA_lenref
-				leg_point = EA_timeref
-			elif (lendur == 1):
-				title_point = EA_timeref
-				leg_point = EA_lenref
-				snaparr_tmp = np.rot90(snaparr_tmp, 2)
+			title_point = [] ; leg_point = []
 #
-			for i in range(0,len(snaparr_tmp)):
+			if (lendur == 0):
+				for i in range(0, len(snaparr_tmp)):
+					title_point.append(EA_lenref[i])
+				for i in range(0, len(snaparr_tmp[0])):
+					leg_point.append(EA_timeref[i])
+			elif (lendur == 1):
+				for i in range(0, len(snaparr_tmp[0])):
+					title_point.append(EA_timeref[i])
+				for i in range(0, len(snaparr_tmp)):
+					leg_point.append(EA_lenref[i])
+#
+	# Rotate snaparr, timearr and planet mass/radius data dependent on switch
+#
+				snaparr_tmp = np.rot90(snaparr_tmp, 1) ; snaparr_tmp = snaparr_tmp[::-1]
+				timearr = np.rot90(timearr, 1) ; timearr = timearr[::-1]
+				r_fit_S = np.rot90(r_fit_S, 1) ; r_fit_S = r_fit_S[::-1]
+				for a in range(1, len(pmass)):
+					pmass[a] = np.rot90(pmass[a], 1) ; pmass[a] = pmass[a][::-1]
+					pradius[a] = np.rot90(pradius[a], 1) ; pradius[a] = pradius[a][::-1]
+#
+			for i in range(0,len(title_point)):
 #
 				fig = plt.figure(1)
 #
@@ -444,7 +485,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 					   Q[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
 				plt.xlabel("Disc radius (AU)", fontsize = 8) 
 				plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
-				plt.ylim(10, 20)
+				plt.ylim(0, 4)
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
 				ax2 = plt.subplot(222)
@@ -478,9 +519,23 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				plt.ylim(ax4.get_ylim()[0], ax4.get_ylim()[1])
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 #
-				plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU_'+EA_lenref[i]+'.pdf')
+				plt.savefig(str(plotdir)+'Matrix_'+str(r_limit)+'AU_'+title_point[i]+'.pdf')
 				plt.clf()
 #
+	# Plot individual r vs. Q distribution
+#
+				fig = plt.figure(1)
+				ax1 = plt.subplot(111)
+				for j in range(0, len(snaparr_tmp[0])):
+					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
+					   Q[snaparr_tmp[i][j],0:r_limit], color = col_arr[j])
+				plt.xlabel("Disc radius (AU)", fontsize = 8) 
+				plt.ylabel("Toomre Q parameter", fontsize = 8, labelpad=0.5)
+				plt.ylim(0, 4)
+				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
+				plt.savefig(str(plotdir)+'Q_r_'+str(r_limit)+'AU_'+title_point[i]+'.pdf')
+				plt.clf()
+
 # Plot surface density vs. radius for ea runs with fit to log-log data to find power index, p
 #
 				coeffs = [0]*len(snaparr_tmp[0]) ; matcov = [0]*len(snaparr_tmp[0])
@@ -491,7 +546,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				for j in range(0, len(snaparr_tmp[0])):
 					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
 #
-					for k in range(0, len(sig[snaparr_tmp[i][j],r_fit_S:r_fit_E]) ):
+					for k in range(0, len(sig[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]) ):
 						y_fitted[j].append(0)
 #
 				plt.figure(1)
@@ -500,36 +555,46 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				for j in range(0, len(snaparr_tmp[0])):
 					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
 #
-					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
-					   np.log10(sig[snaparr_tmp[i][j],r_fit_S:r_fit_E]), [1, 1])
-					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
+					   np.log10(sig[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
 					   coeffs[j][0], coeffs[j][1])
 #
-					if (spline == "TRUE"):
-						rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+	# Write exponents for SD
 #
-						tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
-						   sig[snaparr_tmp[i][j],r_start:r_limit])
-						signew = interpolate.splev(rnew, tck, der = 0)
+					if( (v_K == "90") and (inclin == "0") and (lendur == 0) ):
+						f = open(arch_dir+'../../../SD_exps.dat','a')
+						f.write(str(ea_run)+' '+str(snaparr[i][j])+' '+str( round(coeffs[j][0], 2) )+'\n' )
+						f.close()
 #
+					rnew = np.arange(r_start,r_limit,r_limit/(r_limit/smooth))
+#
+					tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
+					   sig[snaparr_tmp[i][j],r_start:r_limit])
+					signew = interpolate.splev(rnew, tck, der = 0)
+#
+					if (loglin == "TRUE"):
 						line1 = plt.plot(rnew, np.log10(signew), \
 						   color = col_arr[j])
+						line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E], \
+						   y_fitted[j], color = col_arr[j], linewidth = 2, \
+						   linestyle = 'dashed', \
+						   label = str(round(coeffs[j][0], 2)) )
 #
-					elif (spline == "FALSE"):
-						line1 = plt.plot(r[snaparr_tmp[i][j],r_start:r_limit], \
-						   np.log10(sig[snaparr_tmp[i][j],r_start:r_limit]), \
-					   	   color = col_arr[j])
-#
-					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S:r_fit_E], y_fitted[j], 
-					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-					   label = str(round(np.log10(abs(coeffs[j][0])), 4)) )
+					elif (loglin == "FALSE"):
+						line1 = plt.plot(np.log10(rnew), np.log10(signew), \
+						   color = col_arr[j])
+						line2 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
+						   y_fitted[j], color = col_arr[j], linewidth = 2, \
+						   linestyle = 'dashed', \
+						   label = str(round(coeffs[j][0], 2)) )
 #
 				plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 				plt.ylabel("log Surface Density", fontsize = 8, labelpad=0.5)
 				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 				plt.legend(loc='upper right', title = "p fitted values", \
-				   fontsize=6)
+				   fontsize=10)
 #	
 				plt.savefig(str(plotdir)+'SD_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
 				plt.clf()	
@@ -541,7 +606,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 					for j in range(0, len(snaparr_tmp)):
 						print "Power index for the "+str(snaparr_tmp[i][j]) \
 						   +" snapshot of "+str(ea_run)+" is: ",  \
-						   str( round( coeffs[j][0] , 4 ) )+" \n"
+						   str( round( coeffs[j][0] , 2 ) )+" \n"
 #
 # Plot temperature vs. radius for ea runs with fit to log-log data to find power index, q
 #
@@ -552,7 +617,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 # 
 				for j in range(0, len(snaparr_tmp[0])):
 					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
-					for k in range(0, len(T[snaparr_tmp[i][j],r_fit_S:r_fit_E]) ):
+					for k in range(0, len(T[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]) ):
 						y_fitted[j].append(0)
 #
 				plt.figure(1)
@@ -561,36 +626,46 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				for j in range(0, len(snaparr_tmp[0])):
 					r_fit_E = r_d_sigALMA[snaparr_tmp[i][j]]
 #
-					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
-					   np.log10(T[snaparr_tmp[i][j],r_fit_S:r_fit_E]), [1, 1])
-					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S:r_fit_E]), \
+					coeffs[j], matcov[j] = curve_fit(func, np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
+					   np.log10(T[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), [1, 1])
+					y_fitted[j] = func(np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
 					   coeffs[j][0], coeffs[j][1])
 #
-					if (spline == "TRUE"):
-						rnew = np.arange(r_start,r_limit,r_limit/(r_limit/3))
+	# Write exponents for T
 #
-						tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
-						   T[snaparr_tmp[i][j],r_start:r_limit])
-						Tnew = interpolate.splev(rnew, tck, der = 0)
+					if( (v_K == "90") and (inclin == "0") and (lendur == 0) ):
+						f = open(arch_dir+'../../../T_exps.dat','a')
+						f.write(str(ea_run)+' '+str(snaparr[i][j])+' '+str( round(coeffs[j][0], 2) )+'\n' )
+						f.close()
 #
+					rnew = np.arange(r_start,r_limit,r_limit/(r_limit/smooth))
+#
+					tck = interpolate.splrep(r[snaparr_tmp[i][j],r_start:r_limit], \
+					   T[snaparr_tmp[i][j],r_start:r_limit])
+					Tnew = interpolate.splev(rnew, tck, der = 0)
+#
+					if (loglin == "TRUE"):
 						line1 = plt.plot(rnew, np.log10(Tnew), \
 						   color = col_arr[j])
+						line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E], \
+						   y_fitted[j], color = col_arr[j], linewidth = 2, \
+						   linestyle = 'dashed', \
+						   label = str(round(coeffs[j][0], 2)) )
 #
-					elif (spline == "FALSE"):
-						line1 = plt.plot(r[snaparr_tmp[i][j],r_start:r_limit], \
-						   np.log10(T[snaparr_tmp[i][j],r_start:r_limit]), \
-					   	   color = col_arr[j])
-#
-					line2 = plt.plot(r[snaparr_tmp[i][j],r_fit_S:r_fit_E], y_fitted[j], 
-					   color = col_arr[j], linewidth = 2, linestyle = 'dashed', \
-					   label = str(round(np.log10(abs(coeffs[j][0])), 4)) )
+					if (loglin == "FALSE"):
+						line1 = plt.plot(np.log10(rnew), np.log10(Tnew), \
+						   color = col_arr[j])
+						line2 = plt.plot(np.log10(r[snaparr_tmp[i][j],r_fit_S[i][j]:r_fit_E]), \
+						   y_fitted[j], color = col_arr[j], linewidth = 2, \
+						   linestyle = 'dashed', \
+						   label = str(round(coeffs[j][0], 2)) )
 #
 				plt.xlabel("Disc Radius (AU)", fontsize = 8) 
 				plt.ylabel("log Temperature", fontsize = 8, labelpad=0.5)
 				plt.ylim(ax1.get_ylim()[0], ax1.get_ylim()[1])
 				plt.yticks(fontsize = 8) ; plt.xticks(fontsize = 8)
 				plt.legend(loc='upper right', title = "q fitted values", \
-				   fontsize=6)
+				   fontsize=10)
 #
 				plt.savefig(str(plotdir)+'T_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
 				plt.clf()	
@@ -602,7 +677,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 					for j in range(0, len(snaparr_tmp[0])):
 						print "Power index for the "+str(snaparr_tmp[i][j]) \
 						   + " snapshot of "+str(ea_run)+" is: ",  \
-						   str( round( coeffs[j][0] , 4 ) ) +" \n"
+						   str( round( coeffs[j][0] , 2 ) ) +" \n"
 #
 # Compare velocity data with analytic calculation of Keplerian velocity
 #
@@ -610,7 +685,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				ax1 = plt.subplot(111)
 				plt.title('Azimuthal velocity vs. radius for '+str(title_point[i])+' run')
 #
-				for j in range(0, len(snaparr_tmp[0])):
+				for j in range(0, len(leg_point)):
 
 					line1 = plt.plot(r[snaparr_tmp[i][j],0:r_limit], \
 					   abs(v_the[snaparr_tmp[i][j],0:r_limit]), color=col_arr[j])
@@ -621,7 +696,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 #
 	# If a planet is present, overplot onto computed Keplerian profile with filled circle
 #
-					if (len(pmass) > 0):
+					if (len(pmass) > 1):
 						for a in range(1, len(pmass)):
 							if (pmass[a][i][j] != 0.):
 								ax1.plot(pradius[a][i][j],
@@ -642,6 +717,16 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 				plt.savefig(str(plotdir)+'Azi_r_'+str(r_limit)+'AU_'+str(title_point[i])+'.pdf')
 				plt.clf()
 #
+	# Derotate snaparr_tmp, timearr and planet mass/radius arrays for further analyses
+#
+#
+		snaparr_tmp = snaparr_tmp[::-1] ; snaparr_tmp = np.rot90(snaparr_tmp, -1)
+		timearr = timearr[::-1] ; timearr = np.rot90(timearr, -1)
+		r_fit_S = r_fit_S[::-1] ; r_fit_S = np.rot90(r_fit_S, -1) 
+		for a in range(1, len(pmass)):
+			pmass[a] = pmass[a][::-1] ; pmass[a] = np.rot90(pradius[a], 1)
+			pradius[a] = pradius[a][::-1] ; pradius[a] = np.rot90(pradius[a], 1)
+#
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 	# - - - PLOT ABSOLUTE VELOCITY COMPARED TO EXPECTED KEPLERIAN VELOCITY PROFILES
@@ -657,7 +742,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, EA_timeref, EA_lenref, pmass, \
 			fig.subplots_adjust(hspace=0.7, wspace = 0.4)
 #
 			for b in range(0, len(snaparr_tmp[0])):
-				ax1 = plt.subplot(311+b)
+				ax1 = plt.subplot(221+b)
 				vcondarr1 = []   ;   vcondarr2 = []   ;   vcondarr3 = []
 				jstart = 0
 				for i in range(0, 401):

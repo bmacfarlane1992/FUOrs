@@ -107,8 +107,8 @@ def read(arch_dir, plotdir, ea_run, snaparr, pcAU):
 		ptime = [[[0 for k in xrange(len(timearr[0]))] \
 		   for j in xrange(len(timearr))] for i in xrange(len(time))]
 		for a in range(0,len(time)):							    # Loop over number of sinks
-			for i in range(0,len(timearr[0])):					    # Loop over accretion events under analysis
-				for j in range(0,len(timearr)): 				    # Loop over reference time to accr. event
+			for i in range(0,len(timearr)):					    # Loop over accretion events under analysis
+				for j in range(0,len(timearr[0])): 				    # Loop over reference time to accr. event
 					for t_s in range(0, len(time[a])):			    # Loop over timesnaps in sink file
 						if (round(timearr[i][j],3)==round(time[a][t_s],3)):
 							pmass[a][i][j] = mass[a][t_s]

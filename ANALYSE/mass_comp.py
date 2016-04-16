@@ -4,7 +4,7 @@
 # Programme to plot comparison of masses in simulation and PV diagram analyses
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 08/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -119,13 +119,13 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 	plt.scatter(timearr_tmp, m_sys_kep, \
 	   label = 'Keplerian', marker = '+', s=80, facecolors='none', edgecolors='g')
 	plt.scatter(timearr_tmp, m_sys_piv, \
-	   label = 'Orbit infall', marker = 's', s=80, facecolors='none', edgecolors='r')
+	   label = 'Radial infall', marker = 's', s=80, facecolors='none', edgecolors='r')
 	plt.scatter(timearr_tmp, m_sys_sigALMA, \
-	   label = 'ALMA SD', marker = '^', s=80, facecolors='none', edgecolors='k')
+	   label = (r'$\Sigma$')+' cutoff', marker = '^', s=80, facecolors='none', edgecolors='k')
 	plt.ylim(0, ax1.get_ylim()[1])
 	legend = plt.legend(loc = 'upper left', fontsize=8, scatterpoints=1)
 	if (snaparr.ndim == 2):
-		plt.xlim(timearr_tmp[3]-0.25, timearr_tmp[8]+0.25)
+		plt.xlim(timearr_tmp[4]-0.25, timearr_tmp[11]+0.25)
 	plt.ylim(0, max_mass)
 	plt.xlabel('Time (kyr)' ) ; plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
 #

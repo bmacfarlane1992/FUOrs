@@ -5,7 +5,7 @@
 # See script headers for more details on code I/O.
 #
 # Author: Benjamin MacFarlane
-# Date: 07/04/2016
+# Date: 16/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -17,18 +17,19 @@
 arch_dir = "/home/ben/Documents/WORK_PLANETS/PROJECTS/FUORS/"	# Location of ea/ directory with data set
 #
 v_K = ["90"]			# Keplerian velocity percentage restriction on disc mass/radius
-inclin = ["0","90"]		# Inclination of disc being analysed
+inclin = ["0","60","90"]		# Inclination of disc being analysed
 #
-ea_run = [4]		# Select EA runs to process
+ea_run = [0,1,3]		# Select EA runs to process
 #
 r_limit = 150			# Limit of radial plots in pdisc analyses
-spline = "TRUE" 		# Choose whether or not to smooth surface density distributions
 #
 r_inspec = 50 			# Radius at which disc parameters inspected in rdisc
 #
 pv = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to generate PV diagram
 mcomp_tmp = "TRUE"		# Choose whether ("TRUE") or not ("FALSE") to generate mass comparison
 #				# of simulation vs. PV diagram analysis system masses
+exp = "TRUE"			# Choose whether ("TRUE") or not ("FALSE") to compare disc radial SD and T profile exponents
+
 #
 EA_timeref = ["BEFORE","DURING_A","DURING_B","AFTER"]		# Define names of EA snapshots for EA length reference	
 EA_lenref = ["SHORT","MEDIUM","LONG"]				# and time reference to EA outburst event
@@ -69,6 +70,7 @@ import pdisc_r
 import rdisc_r
 import pv_diag
 import mass_comp
+import exp_comp
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -76,18 +78,25 @@ import mass_comp
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
+	# Before beginning loops, remove old .dat files with radial exponents for SD and T
+#
+os.system('rm -r '+arch_dir+'SD_exps.dat '+arch_dir+'T_exps.dat')
+#
+#
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 	# For full analysis, loop over accretion tags as defined in array of L23 (ea_run)
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-# Loop over ea inclination values
+	# Loop over run number
 #
 for i in range(0, len(ea_run)):
 #
-# Loop over Keplerian restrictions
+	# Loop over ea inclination values
 #
 	for j in range(0, len(inclin)):
+#
+	# Loop over Keplerian restrictions
 #
 		for k in range(0, len(v_K)):
 #
@@ -122,8 +131,8 @@ for i in range(0, len(ea_run)):
 #
 			r, vkep = pdisc_r.read(arch_dir_tmp, plotdir, ea_run[i], \
 			   snaparr, EA_timeref, EA_lenref, pmass, pradius, \
-			   hasharr_app, n_accr, r_limit, spline, r_d_kep, r_d_sigALMA,
-			   timearr, v_K[k])
+			   hasharr_app, n_accr, r_limit, r_d_kep, r_d_sigALMA,
+			   timearr, v_K[k], inclin[j])
 #
 	# rdisc read (Disc parameters vs. time for defined radius)
 #
@@ -134,13 +143,13 @@ for i in range(0, len(ea_run)):
 #
 	# Position-Velocity diagram plot
 #
-				pv_mass, raw_fit = pv_diag.pv(arch_dir_tmp, plotdir, ea_run[i], \
+				pv_mass, kep_fit, raw_fit = pv_diag.pv(arch_dir_tmp, plotdir, ea_run[i], \
 				   snaparr, v_K[k], inclin[j], r, vkep, EA_lenref, EA_timeref, \
 				   pcAU, AUm, G, Msol_kg)	
 #
 	# Mass comparison of simulation to PV data
 #
-				if ((raw_fit == "FALSE") and (mcomp_tmp == "TRUE")):
+				if ( (raw_fit == "FALSE") and (kep_fit == "TRUE") and (mcomp_tmp == "TRUE")):
 					mass_comp.comp(arch_dir_tmp, plotdir, ea_run[i], \
 					   snaparr, timearr, v_K, inclin, m_s, m_mri_d, pmass, \
 					   m_d_kep, m_d_piv, m_d_sigALMA, pv_mass, EA_lenref)
@@ -149,6 +158,14 @@ for i in range(0, len(ea_run)):
 #
 			os.system('for f in '+plotdir+'*.pdf; do pdftops -eps $f; done')
 			os.system('rm -r '+plotdir+'*.pdf')
+#
+	# After looping over all selected ea runs, compare radial profile exponents for T and SD
+#
+if (exp == "TRUE"):
+	plotdir = arch_dir + "/PLOTS/"
+	exp_comp.comp(arch_dir, plotdir)
+	os.system('for f in '+plotdir+'*.pdf; do pdftops -eps $f; done')
+	os.system('rm -r '+plotdir+'*.pdf')
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

@@ -4,7 +4,7 @@
 # Programme designed to read in simulation data and generate synthetic PV diagram 
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 14/04/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -448,4 +448,4 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 		plt.savefig(plot_filename[i]) ; plt.clf()
 #	
 #
-	return pv_mass, raw_fit
+	return pv_mass, kep_fit, raw_fit
