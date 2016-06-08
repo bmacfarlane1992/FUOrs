@@ -4,7 +4,7 @@
 # Programme to plot comparison of masses in simulation and PV diagram analyses
 #
 # Author: Benjamin MacFarlane
-# Date: 08/04/2016
+# Date: 08/06/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -30,24 +30,27 @@ import matplotlib.pyplot as plt
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d, pmass, m_d_kep, \
-   m_d_piv, m_d_sigALMA, pv_mass, EA_lenref):
+def comp(dat_dir, plotdir, ea_run, snaparr, snapcore, timearr, v_K, inclin, m_s, m_mri_d, \
+   pmass, m_d_kep, m_d_piv, m_d_sigALMA, pv_mass, EA_lenref):
 #
 	print "Mass comparisons of simulation and PV data now being plotted"
 #
 	# Read in masses independent of snaparr shape
-##
+#
 	# For EA [0, 1] runs
 #
 	if (snaparr.ndim == 1):
-		file_n = len(snaparr)
+		file_n = len(snapcore)
 		snaparr_tmp = [0]*file_n ; timearr_tmp = [0]*file_n ; pmass_tmp = [0]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
-			snaparr_tmp[fcount] = snaparr[i] ; timearr_tmp[fcount] = timearr[i]
-			for a in range(1, len(pmass)):
-				pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i]
-			fcount = fcount + 1
+			for j in range(0, len(snapcore)):
+				if (snaparr[i] == snapcore[j]):
+					snaparr_tmp[fcount] = snaparr[i] ; timearr_tmp[fcount] = timearr[i]
+					for a in range(1, len(pmass)):
+						pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i]
+					fcount = fcount + 1
+		t_s = [] ; t_e = [] ; n_accr = []
 #
 	# For EA [2, 3, 4, 5, 6] runs
 #
@@ -61,6 +64,16 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 				for a in range(1, len(pmass)):
 					pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i][j]
 				fcount = fcount + 1
+#
+	# Read in accretion parameters for runs with accretion
+#
+		t_s = [] ; t_e = []
+		f = open(dat_dir+'../acc_params.dat','r')
+		for line in f:
+			line = line.strip() ; columns = line.split()
+			t_s.append(float(columns[0])) ; t_e.append(float(columns[1]))
+		f.close()
+		t_s = np.array(t_s) ; t_e = np.array(t_e) ; n_accr = len(t_s)
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -87,21 +100,6 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Read in accretion parameters
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-#
-#
-	t_s = [] ; t_e = []
-	f = open(arch_dir+'../acc_params.dat','r')
-	for line in f:
-		line = line.strip() ; columns = line.split()
-		t_s.append(float(columns[0])) ; t_e.append(float(columns[1]))
-	f.close()
-	t_s = np.array(t_s) ; t_e = np.array(t_e)
-#
-#
-#
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 	# Plotting of mass comparisons, for different accretion events
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #
@@ -124,9 +122,12 @@ def comp(arch_dir, plotdir, ea_run, snaparr, timearr, v_K, inclin, m_s, m_mri_d,
 	   label = (r'$\Sigma$')+' cutoff', marker = '^', s=80, facecolors='none', edgecolors='k')
 	plt.ylim(0, ax1.get_ylim()[1])
 	legend = plt.legend(loc = 'upper left', fontsize=8, scatterpoints=1)
-	if (snaparr.ndim == 2):
+	if ((snaparr.ndim == 2) and (ea_run == 3)):
 		plt.xlim(timearr_tmp[4]-0.25, timearr_tmp[11]+0.25)
+	elif ((snaparr.ndim == 2) and (ea_run > 3)):
+		plt.xlim(timearr_tmp[4]-0.25, timearr_tmp[7]+0.25)
 	plt.ylim(0, max_mass)
 	plt.xlabel('Time (kyr)' ) ; plt.ylabel('Mass '+(r'(M$_{\odot}$)') )
 #
 	plt.savefig(plotdir+'mass_comp.pdf') ; plt.clf()
+#

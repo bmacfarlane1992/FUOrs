@@ -4,7 +4,7 @@
 # Programme designed to read in simulation data and generate synthetic PV diagram 
 #
 # Author: Benjamin MacFarlane
-# Date: 14/04/2016
+# Date: 08/06/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -41,10 +41,11 @@ import scipy
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_timeref, \
-   pcAU, AUm, G, Msol_kg):
+def pv(dat_dir, plotdir, ea_run, snaparr, snapcore, v_K, inclin, r, vkep, \
+   pmass, EA_lenref, EA_timeref, pcAU, AUm, G, Msol_kg):
 #
 	print "Position-Velocity diagram now being plotted"
+#
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -57,34 +58,38 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 	if (snaparr.ndim == 1):
 		file_n = len(snaparr)
 		pv_file = [""]*file_n
-		Lfit_file = [""]*file_n
-		Rfit_file = [""]*file_n
+		Lfit_file = [""]*file_n ; Rfit_file = [""]*file_n
 #
-		snaparr_tmp = [0]*file_n
-		plot_title = [""]*file_n ; plot_filename = [""]*file_n
+		snaparr_tmp = [0]*file_n ; snapcore_tmp = [0]*len(snapcore)
+		pmass_tmp = [0.]*len(snapcore)
+		
+		plot_title = [""]*len(snapcore) ; plot_filename = [""]*len(snapcore)
 		fcount = 0
 		for i in range(0, len(snaparr)):
 #
 			if (snaparr[i] < (1000-70)):
-				pv_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+				pv_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 				   str(snaparr[i]+69)+'.du.hist_pv.1'
-				Lfit_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+				Lfit_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 				   str(snaparr[i]+69)+'.du.fit_Lpv.1'
-				Rfit_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+				Rfit_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 				   str(snaparr[i]+69)+'.du.fit_Rpv.1'
 			elif (snaparr[i] > (1000-70)):
-				pv_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+				pv_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 				   str(snaparr[i]+69)+'.du.hist_pv.1'
-				Lfit_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+				Lfit_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 				   str(snaparr[i]+69)+'.du.fit_Lpv.1'
-				Rfit_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+				Rfit_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 				   str(snaparr[i]+69)+'.du.fit_Rpv.1'
+			for j in range(0, len(snapcore)):
+				if (snaparr[i] == snapcore[j]):
+					snapcore_tmp[j] = fcount
+					plot_title[fcount] = 'P-V Diagram: '+str(ea_run)+'   ('+str(snaparr[i])+')'
+					plot_filename[fcount] = plotdir+'PV_diag_'+str(snaparr[i])+'.pdf'
 #
-			plot_title[fcount] = 'P-V Diagram: '+str(ea_run)+'   ('+str(snaparr[i])+')'
-			plot_filename[fcount] = plotdir+'TEST_PV_diag_'+str(snaparr[i])+'.pdf'
-#
-			snaparr_tmp[fcount] = snaparr[i]
-			fcount = fcount + 1
+					for a in range(1, len(pmass)):
+						pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i]
+					fcount = fcount + 1
 #
 	# For EA [2, 3, 4, 5, 6] runs
 #
@@ -94,25 +99,25 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 		Lfit_file = [""]*file_n
 		Rfit_file = [""]*file_n
 #
-		snaparr_tmp = [0]*file_n
+		snaparr_tmp = [0]*file_n ; pmass_tmp = [0.]*file_n
 		plot_title = [""]*file_n ; plot_filename = [""]*file_n
 		fcount = 0
 		for i in range(0, len(snaparr)):
 			for j in range(0, len(snaparr[0])):
 #
 				if (snaparr[i][j] < (1000-70)):
-					pv_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+					pv_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 					   str(snaparr[i][j]+69)+'.du.hist_pv.1'
-					Lfit_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+					Lfit_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 					   str(snaparr[i][j]+69)+'.du.fit_Lpv.1'
-					Rfit_file[fcount] = arch_dir+'pv_diag/DE05.du.00'+ \
+					Rfit_file[fcount] = dat_dir+'pv_diag/DE05.du.00'+ \
 					   str(snaparr[i][j]+69)+'.du.fit_Rpv.1'
 				elif (snaparr[i][j] > (1000-70)):
-					pv_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+					pv_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 					   str(snaparr[i][j]+69)+'.du.hist_pv.1'
-					Lfit_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+					Lfit_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 					   str(snaparr[i][j]+69)+'.du.fit_Lpv.1'
-					Rfit_file[fcount] = arch_dir+'pv_diag/DE05.du.0'+ \
+					Rfit_file[fcount] = dat_dir+'pv_diag/DE05.du.0'+ \
 					   str(snaparr[i][j]+69)+'.du.fit_Rpv.1'
 #
 				plot_title[fcount] = 'P-V Diagram: ('+str(EA_lenref[i])+', '+ \
@@ -121,6 +126,10 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 				   +str(EA_timeref[j])+'.pdf'
 #
 				snaparr_tmp[fcount] = snaparr[i][j]
+#
+				for a in range(1, len(pmass)):
+					pmass_tmp[fcount] = pmass_tmp[fcount] + pmass[a][i][j]
+#
 				fcount = fcount + 1
 #
 #
@@ -132,7 +141,7 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 #
 	pv_mass = [] ; pv_mass_err = []
 #
-	for i in range(0, file_n):
+	for i in range(0, fcount):
 #
 		r_bin = [] ; vz_bin = [] ; count_bin = []
 #
@@ -361,8 +370,12 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
+	# Mass average
+#
 			pv_mass.append( (M_sys1 + M_sys2) / 2. )
 			pv_mass_err.append( (M_err1 + M_err2) / 2. )
+#
+	# Quadrant mass/error checks
 #
 			if (RL_fitcheck == "TRUE"):
 				print "Mass of the system determined from LHS PV fit is: ", \
@@ -373,79 +386,157 @@ def pv(arch_dir, plotdir, ea_run, snaparr, v_K, inclin, r, vkep, EA_lenref, EA_t
 				   round(pv_mass[i],4), "Solar masses"
 				print "Error on mass determined from PV diagram is: ", \
 				   round(pv_mass_err[i],5), "Solar masses"
-				
+#
+	# Estimation of companion mass vs. sink mass	
+#
+			if (pmass_tmp[i] > 0):
+				companion_mass = abs(M_sys1 - M_sys2)
+				discrep = ( abs(companion_mass - pmass_tmp[i]) / pmass_tmp[i] ) * 100.			
+				print "\n Estimate of companion mass from kinematic analysis is: ", \
+				   round(companion_mass,4), " Solar masses"
+				print "Actual sink particle mass is: ", round(pmass_tmp[i],4), "\n"
+				print "% discrepancy between kinematic/sink companion mass: ", \
+				   round(discrep,4), " Solar masses"
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-	# Plotting of PV diagram
+	# Plotting of PV diagram - EA RUNS
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
 	# Set up grid of interpolation points, interpolate on arbitrary grid, and plot
 #
-		xi, yi = np.linspace(r_bin.min(), r_bin.max(), 500), \
-		   np.linspace(vz_bin.min(), vz_bin.max(), 500)
-		xi, yi = np.meshgrid(xi, yi)
+		if (snaparr.ndim == 2):
+#
+			xi, yi = np.linspace(r_bin.min(), r_bin.max(), 500), \
+			   np.linspace(vz_bin.min(), vz_bin.max(), 500)
+			xi, yi = np.meshgrid(xi, yi)
 #
 	# Before defining the2D histogram density, convert number density to (logarithmic) 
 	# surface density by computing cgs conversions for area and mass, then convert number 
 	# histogram to surface density in PV diagram radius-velocity bins
 #
-		sd_norm = []
-		bin_area = (delt_r*(AUm*100.)) * ( (y_max-y_min) * (AUm*100.))	# area in cm^2
-		part_mass = part_mass * (Msol_kg * 1000.)			# mass in g
-		for j in range(0, len(count_bin)):
-			if (count_bin[j] != 0):
-				sd_norm.append( (count_bin[j]*part_mass) / bin_area)
-			if (count_bin[j] == 0):
-				sd_norm.append(1e-10)  
-		sd_norm = np.log10(np.array(sd_norm))
+			sd_norm = []
+			bin_area = (delt_r*(AUm*100.)) * ( (y_max-y_min) * (AUm*100.))	# area in cm^2
+			part_mass = part_mass * (Msol_kg * 1000.)			# mass in g
+			for j in range(0, len(count_bin)):
+				if (count_bin[j] != 0):
+					sd_norm.append( (count_bin[j]*part_mass) / bin_area)
+				if (count_bin[j] == 0):
+					sd_norm.append(1e-10)  
+			sd_norm = np.log10(np.array(sd_norm))
 #
-		zi = scipy.interpolate.griddata((r_bin, vz_bin), sd_norm, (xi, yi), \
-		   method='nearest')
+			zi = scipy.interpolate.griddata((r_bin, vz_bin), sd_norm, (xi, yi), \
+			   method='nearest')
 #
-		plt.figure(1)
-		ax1 = plt.subplot(111)
-		plt.imshow(zi, vmin=-1., vmax=2.5, origin='lower', \
-		   extent=[r_bin.min(), r_bin.max(), vz_bin.min(), vz_bin.max()], aspect = 'auto')
+			plt.figure(1)
+			ax1 = plt.subplot(111)
+			plt.imshow(zi, vmin=-1., vmax=2.5, origin='lower', \
+			   extent=[r_bin.min(), r_bin.max(), vz_bin.min(), vz_bin.max()], aspect = 'auto')
 #
 	# Overplot Keplerian fits to data, plotting points fitted to if chosen
 #
 #
-		if (kep_fit == "TRUE"):
+			if (kep_fit == "TRUE"):
 #
 	# PV Keplerian distributions
 #
-			if (raw_fit == "TRUE"):
-				Lraw = plt.plot(Lfit_r, Lfit_y, linewidth = 4, \
-				   linestyle = 'solid', color = 'g')		
-				Rraw = plt.plot(Rfit_r, Rfit_y, linewidth = 4, \
-				   linestyle = 'solid', color = 'g')		
+				if (raw_fit == "TRUE"):
+					Lraw = plt.plot(Lfit_r, Lfit_y, linewidth = 4, \
+					   linestyle = 'solid', color = 'g')		
+					Rraw = plt.plot(Rfit_r, Rfit_y, linewidth = 4, \
+					   linestyle = 'solid', color = 'g')		
 #
-			if (raw_fit == "FALSE"):
-				Lfit_start = len(Lfit_r)-fit_stop
-				Lfit_stop = len(Lfit_r)-fit_start
-				Lfit_start = len(Lfit_r)-fit_stop + \
-				   (len(Lfit_r[Lfit_start:Lfit_stop]) - len(y_fitted1))
+				if (raw_fit == "FALSE"):
+					Lfit_start = len(Lfit_r)-fit_stop
+					Lfit_stop = len(Lfit_r)-fit_start
+					Lfit_start = len(Lfit_r)-fit_stop + \
+					   (len(Lfit_r[Lfit_start:Lfit_stop]) - len(y_fitted1))
 #
-				Lfit = plt.plot(Lfit_r[Lfit_start:Lfit_stop], y_fitted1, \
-				   linewidth = 4, linestyle = 'solid', color = 'r')
-				Rfit = plt.plot(Rfit_r[fit_start:fit_stop], y_fitted2, \
-				   linewidth = 4, linestyle = 'solid', color = 'r')		
+					Lfit = plt.plot(Lfit_r[Lfit_start:Lfit_stop], y_fitted1, \
+					   linewidth = 4, linestyle = 'solid', color = 'r')
+					Rfit = plt.plot(Rfit_r[fit_start:fit_stop], y_fitted2, \
+					   linewidth = 4, linestyle = 'solid', color = 'r')		
 #
 	# Simulation Keplerian distributions
 #
-				plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
-				   linestyle = 'dashed', color = 'k')
-				r[i] = [-k for k in r[i]] ; vkep[i] = [-k for k in vkep[i]]
-				plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
-				   linestyle = 'dashed', color = 'k')
+					plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
+					   linestyle = 'dashed', color = 'k')
+					r[i] = [-k for k in r[i]] ; vkep[i] = [-k for k in vkep[i]]
+					plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
+					   linestyle = 'dashed', color = 'k')
 #
-		cbar = plt.colorbar() ; cbar.ax.set_ylabel('Log. Surface density,'+' (g '+(r'cm$^{-2}$')+')')
-		plt.xlabel('Radius (AU)') ; plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
-		plt.xlim(-100,100) ; plt.ylim(-10, 10)
+			cbar = plt.colorbar() ; cbar.ax.set_ylabel('Log. Surface density,'+' (g '+(r'cm$^{-2}$')+')')
+			plt.xlabel('Radius (AU)') ; plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
+			plt.xlim(-100,100) ; plt.ylim(-10, 10)
 #
-		plt.savefig(plot_filename[i]) ; plt.clf()
+			plt.savefig(plot_filename[i]) ; plt.clf()
+#
+#
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+	# Plotting of PV diagram - EA RUNS
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+#
+#
+	# Set up grid of interpolation points, interpolate on arbitrary grid, and plot
+#
+		if (snaparr.ndim == 1):
+#
+				for jdash in range(0, len(snapcore_tmp)):
+					if (snaparr_tmp[i] == snapcore_tmp[jdash]):
+#
+						xi, yi = np.linspace(r_bin.min(), r_bin.max(), 500), \
+						   np.linspace(vz_bin.min(), vz_bin.max(), 500)
+						xi, yi = np.meshgrid(xi, yi)
+#
+						sd_norm = []
+						bin_area = (delt_r*(AUm*100.)) * ( (y_max-y_min) * (AUm*100.))
+						part_mass = part_mass * (Msol_kg * 1000.)
+						for j in range(0, len(count_bin)):
+							if (count_bin[j] != 0):
+								sd_norm.append( (count_bin[j]*part_mass) / bin_area)
+							if (count_bin[j] == 0):
+								sd_norm.append(1e-10)  
+						sd_norm = np.log10(np.array(sd_norm))
+#
+						zi = scipy.interpolate.griddata((r_bin, vz_bin), sd_norm, (xi, yi), \
+						   method='nearest')
+#
+						plt.figure(1)
+						ax1 = plt.subplot(111)
+						plt.imshow(zi, vmin=-1., vmax=2.5, origin='lower', \
+						   extent=[r_bin.min(), r_bin.max(), vz_bin.min(), vz_bin.max()], aspect = 'auto')
+#
+						if (kep_fit == "TRUE"):
+#
+							if (raw_fit == "TRUE"):
+								Lraw = plt.plot(Lfit_r, Lfit_y, linewidth = 4, \
+								   linestyle = 'solid', color = 'g')		
+								Rraw = plt.plot(Rfit_r, Rfit_y, linewidth = 4, \
+								   linestyle = 'solid', color = 'g')		
+#
+							if (raw_fit == "FALSE"):
+								Lfit_start = len(Lfit_r)-fit_stop
+								Lfit_stop = len(Lfit_r)-fit_start
+								Lfit_start = len(Lfit_r)-fit_stop + \
+								   (len(Lfit_r[Lfit_start:Lfit_stop]) - len(y_fitted1))
+#
+								Lfit = plt.plot(Lfit_r[Lfit_start:Lfit_stop], y_fitted1, \
+								   linewidth = 4, linestyle = 'solid', color = 'r')
+								Rfit = plt.plot(Rfit_r[fit_start:fit_stop], y_fitted2, \
+								   linewidth = 4, linestyle = 'solid', color = 'r')		
+#
+								plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
+								   linestyle = 'dashed', color = 'k')
+								r[i] = [-k for k in r[i]] ; vkep[i] = [-k for k in vkep[i]]
+								plt.plot(r[i][3:75], vkep[i][3:75], linewidth = 4, \
+								   linestyle = 'dashed', color = 'k')
+#
+						cbar = plt.colorbar() ; cbar.ax.set_ylabel('Log. Surface density,'+' (g '+(r'cm$^{-2}$')+')')
+						plt.xlabel('Radius (AU)') ; plt.ylabel('Line of sight velocity'+' (km'+(r's$^{-1}$')+')')
+						plt.xlim(-100,100) ; plt.ylim(-10, 10)
+#
+						plt.savefig(plot_filename[jdash]) ; plt.clf()
 #	
 #
 	return pv_mass, kep_fit, raw_fit

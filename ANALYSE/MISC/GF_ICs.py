@@ -52,7 +52,7 @@ col_arr = ["b", "g"]
 def func(x, a, b):
   return a*x + b
 #
-r_fit = 15				# In AU
+r_fit = 5				# In AU
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =

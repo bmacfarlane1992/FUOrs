@@ -8,7 +8,7 @@
 #
 #
 # Author: Benjamin MacFarlane
-# Date: 07/04/2016
+# Date: 08/06/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
+def read(dat_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -47,7 +47,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 		print "rdisc.1 file being read/plots being generated"
 		arch_ext = 'rdisc_DS/DE05.rdisc.1'
-		filename = arch_dir+arch_ext
+		filename = dat_dir+arch_ext
 #
 	# Define arrays to fill
 #
@@ -106,13 +106,6 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 			r_diff_ksig[i] = abs(r_d_kep[i] - r_d_sigALMA[i])
 			r_diff_phisig[i] = abs(r_d_piv[i] - r_d_sigALMA[i])
 #
-	# Print time limits for individual runs for refining of times plotted
-#
-		if (time_check == "TRUE"):
-			print "Minimum time of run is: ", min(time), " kyr"
-			print "Maximum time of run is: ", max(time), " kyr"
-			exit()
-#
 	# Define time indices for accretion times, in order to generate continuous fill
 #
 		hasharr = []
@@ -133,6 +126,28 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 			hasharr_app.append(n_snaps-1)	
 		n_accr = len(hasharr_app)/2
 		hasharr_app = np.reshape(hasharr_app, (n_accr, 2))
+#
+	# Print time limits for individual runs for refining of times plotted
+#
+		if (time_check == "TRUE"):
+			print "Minimum time of run is: ", min(time), " kyr"
+			print "Maximum time of run is: ", max(time), " kyr"
+#
+	# Check the times of snapshots entered for before, during and after accretion event chosen
+#
+			print "\n"
+			for i in range(0,n_accr):
+				print "Accretion event "+str(i+1)+" begins at snapshot "+ \
+				   str(hasharr_app[i][0])+" for "+ \
+				   str((hasharr_app[i][1]-hasharr_app[i][0])*10)+" years" \
+				   " until snapshot "+str(hasharr_app[i][1])
+			print "\n The final snapshot of ea run "+str(ea_run)+" is "+str(len(time))+"\n"
+			for i in range(0, len(snaparr)):
+				for j in range(0, len(snaparr_tmp[0])):
+					print "The time of snapshot ("+EA_lenref[i]+", "+ \
+					   EA_timeref[j]+") entered is: ", round(timearr[i][j], 3)
+			print "\n"
+			exit()
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -155,7 +170,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 		plt.xlim([int(min(time)),int(max(time))])
 		plt.ylabel("MRI disc mass "+(r'(M$_{\odot}$)'))
 #	
-		plt.savefig(plotdir+'iad_star_mass.pdf')
+		plt.savefig(plotdir+str(ea_run)+'_iad_star_mass.pdf')
 		plt.clf()
 #
 	# Plot mass of disc with Keplerian and azimuthal velocity criteria
@@ -190,7 +205,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 		plt.xlim([int(min(time)),math.ceil(max(time))])
 		plt.ylim(0, ax2.get_ylim()[1])
 		plt.ylabel(('|$\Delta$ ')+"M| (AU)")
-		plt.savefig(plotdir+'disc_mass.pdf')	
+		plt.savefig(plotdir+str(ea_run)+'_disc_mass.pdf')	
 		plt.clf()
 #
 	# Plot radius of disc with Keplerian and azimuthal velcity criteria
@@ -224,7 +239,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 		plt.xlim([int(min(time)),math.ceil(max(time))])
 		plt.ylim(0, max(r_diff_kphi))
 		plt.ylabel(('|$\Delta$ ')+"R| (AU)")
-		plt.savefig(plotdir+'disc_radius.pdf')	
+		plt.savefig(plotdir+str(ea_run)+'_disc_radius.pdf')	
 		plt.clf()
 #
 #
@@ -234,7 +249,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 #
 		if (n_accr != 0):
-			f = open(arch_dir+'../acc_params.dat','w')
+			f = open(dat_dir+'../acc_params.dat','w')
 			for i in range(0, n_accr):
 				f.write( str(hasharr_app[i][0]*0.01 + min(time))+' '+ \
 				   str(hasharr_app[i][1]*0.01 + min(time))+'\n' )
@@ -258,7 +273,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, v_K, inclin):
 #
 	print "Mass criteria for snapshots now being analysed"
 	arch_ext = 'rdisc/DE05.rdisc.1'
-	filename = arch_dir+arch_ext
+	filename = dat_dir+arch_ext
 #
 	# Define arrays to fill, read file and store data in relevant array
 #

@@ -6,7 +6,7 @@
 # Script also provides equivalent simulation time for each snapshot under analysis.
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 08/06/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -30,7 +30,7 @@ import glob
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, ea_run, snaparr, pcAU):
+def read(arch_dir, dat_dir, plotdir, ea_run, snaparr, pcAU):
 	print "Planet (sink) data being read"
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -39,7 +39,7 @@ def read(arch_dir, plotdir, ea_run, snaparr, pcAU):
 #
 #
 	pmass = [] ; pradius = [] ; ptime = []
-	file_list = sorted(glob.glob(arch_dir+'../../../ICs/'+str(ea_run)+'/DE05.sink*'))
+	file_list = sorted(glob.glob(arch_dir+'/ICs/'+str(ea_run)+'/DE05.sink*'))
 	file_n = len(file_list)
 #
 	# Define arrays to fill

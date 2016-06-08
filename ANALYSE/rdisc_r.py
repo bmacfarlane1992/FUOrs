@@ -6,7 +6,7 @@
 # Whitworth & Hubber (2012) work.
 #
 # Author: Benjamin MacFarlane
-# Date: 17/03/2016
+# Date: 08/06/2016
 # Contact: bmacfarlane@uclan.ac.uk
 #
 #
@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 #
 #
-def read(arch_dir, plotdir, ea_run, hasharr_app, n_accr, r_inspec, v_K, inclin): 	
+def read(dat_dir, plotdir, ea_run, hasharr_app, n_accr, r_inspec, v_K, inclin): 	
 #
 #
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -39,7 +39,7 @@ def read(arch_dir, plotdir, ea_run, hasharr_app, n_accr, r_inspec, v_K, inclin):
 #
 	if ((v_K == "90") and (inclin == "0")):
 		print("rdisc files being read")
-		filename = arch_dir+'rdisc_DS/DE05.rdisc.1.'+str(r_inspec)
+		filename = dat_dir+'rdisc_DS/DE05.rdisc.1.'+str(r_inspec)
 #
 	# Define arrays to fill
 #
